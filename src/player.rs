@@ -131,12 +131,13 @@ fn player_movement_system(
     }
 }
 
-const JET_BRIGHTNESS: f32 = 24.0;
+const JET_BLUENESS: f32 = 24.0;
+const JET_BRIGHTNESS: f32 = 10.0;
 
 fn toggle_jet(mut jet: CTmpMut<Skeleton, Slot>, on: bool) {
     if on {
-        jet.color_mut().a = 1.0;
-        jet.color_mut().b = JET_BRIGHTNESS;
+        jet.color_mut().a = JET_BRIGHTNESS;
+        jet.color_mut().b = JET_BLUENESS;
     } else {
         jet.color_mut().a = 0.0;
     }
