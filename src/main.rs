@@ -21,6 +21,7 @@ use crate::prelude::*;
 
 fn main() {
     App::new()
+        .insert_resource(ClearColor(Color::DARK_GRAY))
         .add_state::<GameState>()
         .add_plugins(DefaultPlugins)
         .add_plugins((
