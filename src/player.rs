@@ -1,4 +1,6 @@
-use crate::prelude::*;
+use bevy_spine::{SkeletonController, SpineBundle};
+
+use crate::{assets::Skeletons, prelude::*};
 
 // Define a plugin for the player.
 pub struct PlayerPlugin;
@@ -13,6 +15,7 @@ impl Plugin for PlayerPlugin {
                     player_camera_system,
                     player_movement_system,
                     player_animate_system,
+                    player_jet_animation_system,
                 ),
             );
     }
@@ -41,15 +44,14 @@ impl Player {
 }
 
 // Define a system to spawn the player.
-fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
+fn spawn_player(mut commands: Commands, skeletons: Res<Skeletons>) {
     // Spawn a sprite for the player.
     commands.spawn((
-        SpriteBundle {
-            transform: Transform::from_xyz(0.0, 0.0, 0.0),
-            texture: game_assets.player.clone(),
+        SpineBundle {
+            skeleton: skeletons.player_ship.clone(),
             ..Default::default()
         },
-        InertiaVolume::new(Vec2::new(0.0, 0.0), 0.0, 1.0, 1.0),
+        InertiaVolume::new(1.0, 1.0),
         Player::new(),
     ));
     commands.spawn((Camera2dBundle::default(),));
@@ -108,6 +110,36 @@ fn player_movement_system(
         }
         if input.pressed(KeyCode::D) {
             inertia.apply_rotation_force(-5.0, dt);
+        }
+    }
+}
+
+fn player_jet_animation_system(mut players: Query<(&Player, &mut Spine)>) {
+    for (player, mut spine) in players.iter_mut() {
+        let Spine(SkeletonController { skeleton, .. }) = &mut *spine;
+        if let Some(mut left_brake) = skeleton.find_slot_mut("left_maneuver") {
+            let braking_light = if player.side_braking < -0.1 { 1. } else { 0. };
+            left_brake.color_mut().a = braking_light;
+        }
+        if let Some(mut right_brake) = skeleton.find_slot_mut("right_maneuver") {
+            let braking_light = if player.side_braking > 0.1 { 1. } else { 0. };
+            right_brake.color_mut().a = braking_light;
+        }
+        if let Some(mut left_jet) = skeleton.find_slot_mut("left_jet") {
+            let jet_light = if player.thrust > 0.01 { 1. } else { 0. };
+            left_jet.color_mut().a = jet_light;
+        }
+        if let Some(mut right_jet) = skeleton.find_slot_mut("right_jet") {
+            let jet_light = if player.thrust > 0.01 { 1. } else { 0. };
+            right_jet.color_mut().a = jet_light;
+        }
+        if let Some(mut left_reverse_jet) = skeleton.find_slot_mut("left_reverse_jet") {
+            let jet_light = if player.thrust < -0.01 { 1. } else { 0. };
+            left_reverse_jet.color_mut().a = jet_light;
+        }
+        if let Some(mut right_reverse_jet) = skeleton.find_slot_mut("right_reverse_jet") {
+            let jet_light = if player.thrust < -0.01 { 1. } else { 0. };
+            right_reverse_jet.color_mut().a = jet_light;
         }
     }
 }

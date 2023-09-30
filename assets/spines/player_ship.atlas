@@ -1,0 +1,11 @@
+player_ship.png
+size:243,176
+filter:Linear,Linear
+pma:true
+Body
+bounds:2,2,172,221
+offsets:32,18,256,256
+rotate:90
+Jet
+bounds:225,46,128,16
+rotate:90

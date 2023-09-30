@@ -12,15 +12,17 @@ impl Plugin for PhysicsPlugin {
 pub struct InertiaVolume {
     pub velocity: Vec2,
     pub rotation: f32,
+    pub rotation_velocity: f32,
     pub mass: f32,
     pub radius: f32,
 }
 
 impl InertiaVolume {
-    pub fn new(velocity: Vec2, rotation: f32, mass: f32, radius: f32) -> Self {
+    pub fn new(mass: f32, radius: f32) -> Self {
         Self {
-            velocity,
-            rotation,
+            velocity: Vec2::ZERO,
+            rotation: 0.0,
+            rotation_velocity: 0.0,
             mass,
             radius,
         }

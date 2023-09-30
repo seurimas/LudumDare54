@@ -1,16 +1,21 @@
 mod assets;
-mod cargo_ship;
 mod game_state;
+mod indicators;
 mod physics;
+mod pickups;
 mod player;
 mod prelude;
+mod trade_routes;
 
 #[macro_use]
 extern crate lazy_static;
 use assets::GameAssetsPlugin;
-use cargo_ship::CargoShipPlugin;
+use bevy_spine::SpinePlugin;
+use indicators::IndicatorsPlugin;
 use physics::PhysicsPlugin;
+use pickups::PickupsPlugin;
 use player::PlayerPlugin;
+use trade_routes::TradeRoutesPlugin;
 
 use crate::prelude::*;
 
@@ -19,9 +24,12 @@ fn main() {
         .add_state::<GameState>()
         .add_plugins(DefaultPlugins)
         .add_plugins((
-            CargoShipPlugin,
+            SpinePlugin,
+            TradeRoutesPlugin,
+            IndicatorsPlugin,
             GameAssetsPlugin,
             PhysicsPlugin,
+            PickupsPlugin,
             PlayerPlugin,
         ))
         .run();

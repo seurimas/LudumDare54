@@ -2,6 +2,7 @@ use bevy_asset_loader::{
     asset_collection::AssetCollection,
     loading_state::{LoadingState, LoadingStateAppExt},
 };
+use bevy_spine::{Atlas, SkeletonData, SkeletonJson};
 
 use crate::prelude::*;
 
@@ -12,6 +13,7 @@ impl Plugin for GameAssetsPlugin {
         app.add_loading_state(
             LoadingState::new(GameState::Loading).continue_to_state(GameState::Playing),
         )
+        .add_systems(OnExit(GameState::Loading), create_skeletons)
         .add_collection_to_loading_state::<_, GameAssets>(GameState::Loading);
     }
 }
@@ -24,4 +26,30 @@ pub struct GameAssets {
     pub cargo_ship: Handle<Image>,
     #[asset(path = "sprites/indicator.png")]
     pub indicator: Handle<Image>,
+    #[asset(path = "sprites/drop.png")]
+    pub drop: Handle<Image>,
+    // Need to load atlas and jsons, then create skeletons.
+    #[asset(path = "spines/player_ship.atlas")]
+    pub player_ship_atlas: Handle<Atlas>,
+    #[asset(path = "spines/player_ship.json")]
+    pub player_ship_json: Handle<SkeletonJson>,
+}
+
+#[derive(Resource)]
+pub struct Skeletons {
+    pub player_ship: Handle<SkeletonData>,
+}
+
+fn create_skeletons(
+    mut commands: Commands,
+    assets: Res<GameAssets>,
+    mut skeletons: ResMut<Assets<SkeletonData>>,
+) {
+    let player_ship_skeleton = SkeletonData::new_from_json(
+        assets.player_ship_json.clone(),
+        assets.player_ship_atlas.clone(),
+    );
+    let player_ship = skeletons.add(player_ship_skeleton);
+
+    commands.insert_resource(Skeletons { player_ship });
 }

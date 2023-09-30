@@ -5,61 +5,28 @@ use crate::prelude::*;
 const INDICATOR_DISTANCE: f32 = 100.0;
 const INDICATOR_TEXT_OFFSET: f32 = 20.0;
 
-pub struct CargoShipPlugin;
+pub struct IndicatorsPlugin;
 
-impl Plugin for CargoShipPlugin {
+impl Plugin for IndicatorsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Playing), spawn_cargo_ship)
-            .add_systems(
-                Update,
-                (cargo_ship_indicator_system.run_if(in_state(GameState::Playing)),),
-            );
+        app.add_systems(
+            Update,
+            (display_indicator_system.run_if(in_state(GameState::Playing)),),
+        );
     }
 }
 
 #[derive(Component, Debug)]
-pub struct CargoShip {
+pub struct DistantIndicator {
     pub indicator: Entity,
     pub indicator_text: Entity,
 }
 
-fn spawn_cargo_ship(mut commands: Commands, game_assets: Res<GameAssets>) {
-    let indicator = commands
-        .spawn(ImageBundle {
-            image: UiImage::new(game_assets.indicator.clone()),
-            style: Style {
-                width: Val::Px(16.0),
-                height: Val::Px(32.0),
-                ..Default::default()
-            },
-            ..Default::default()
-        })
-        .id();
-    let indicator_text = commands
-        .spawn(TextBundle {
-            text: Text::from_section("", TextStyle::default()),
-            ..Default::default()
-        })
-        .id();
-    commands.spawn((
-        SpriteBundle {
-            transform: Transform::from_xyz(0.0, 0.0, 0.0),
-            texture: game_assets.cargo_ship.clone(),
-            ..Default::default()
-        },
-        InertiaVolume::new(Vec2::new(0.0, 0.0), 0.0, 1.0, 1.0),
-        CargoShip {
-            indicator,
-            indicator_text,
-        },
-    ));
-}
-
-fn cargo_ship_indicator_system(
+fn display_indicator_system(
     windows: Query<&Window>,
     mut queries: ParamSet<(
         Query<&Transform, With<Camera2d>>,
-        Query<(&CargoShip, &Transform)>,
+        Query<(&DistantIndicator, &Transform)>,
         Query<(
             &mut Visibility,
             &mut Transform,

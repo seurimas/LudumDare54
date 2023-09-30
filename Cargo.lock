@@ -9,6 +9,7 @@ dependencies = [
  "anyhow",
  "bevy",
  "bevy_asset_loader",
+ "bevy_spine",
  "lazy_static",
  "rand",
  "rand_pcg",
@@ -856,6 +857,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_spine"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b48885ff3c3ce7ec9886b0adbe70aea92ca73dc026ab30d0fe00ea09bc8190b"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "glam",
+ "rusty_spine",
+]
+
+[[package]]
 name = "bevy_sprite"
 version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1659,6 +1672,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5418c17512bdf42730f9032c74e1ae39afc408745ebb2acf72fbc4691c17945"
 dependencies = [
  "bytemuck",
+ "mint",
  "serde",
 ]
 
@@ -2159,6 +2173,12 @@ dependencies = [
  "adler",
  "simd-adler32",
 ]
+
+[[package]]
+name = "mint"
+version = "0.5.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e53debba6bda7a793e5f99b8dacf19e626084f525f7829104ba9898f367d85ff"
 
 [[package]]
 name = "mio"
@@ -2803,6 +2823,15 @@ name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
+
+[[package]]
+name = "rusty_spine"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d6ef61bd4c753a05bb96171372a6524ed18af47da33973a29492b16d551a0f22"
+dependencies = [
+ "mint",
+]
 
 [[package]]
 name = "ruzstd"
