@@ -5,13 +5,7 @@ pub struct PickupsPlugin;
 impl Plugin for PickupsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Playing), spawn_debug_drops);
-        app.add_systems(
-            Update,
-            (
-                player_pickup_system,
-                cargo_ship_drop_system.run_if(in_state(GameState::Playing)),
-            ),
-        );
+        app.add_systems(Update, (player_pickup_system,));
     }
 }
 
@@ -22,10 +16,20 @@ pub enum Pickup {
 }
 
 fn spawn_debug_drops(mut commands: Commands, game_assets: Res<GameAssets>) {
+    spawn_exotic(300., 0., &mut commands, game_assets.exotic.clone(), 100.);
+}
+
+pub fn spawn_exotic(
+    x: f32,
+    y: f32,
+    mut commands: &mut Commands<'_, '_>,
+    texture: Handle<Image>,
+    value: f32,
+) {
     commands.spawn((
         SpriteBundle {
-            transform: Transform::from_xyz(300.0, 0.0, 0.0),
-            texture: game_assets.exotic.clone(),
+            transform: Transform::from_xyz(x, y, 0.0),
+            texture,
             sprite: Sprite {
                 color: Color::rgba(10., 10., 0., 1.),
                 ..Default::default()
@@ -33,7 +37,33 @@ fn spawn_debug_drops(mut commands: Commands, game_assets: Res<GameAssets>) {
             ..Default::default()
         },
         InertiaVolume::new(1.0, 16.0),
-        Pickup::ExoticMaterial(100.0),
+        Pickup::ExoticMaterial(value),
+    ));
+}
+
+pub fn spawn_salvage(
+    x: f32,
+    y: f32,
+    velocity: Vec2,
+    mut commands: &mut Commands<'_, '_>,
+    texture: Handle<Image>,
+    value: f32,
+) {
+    let mut inertia_volume = InertiaVolume::new(1.0, 8.0);
+    inertia_volume.velocity = velocity;
+    inertia_volume.rotation_velocity = 0.1;
+    commands.spawn((
+        SpriteBundle {
+            transform: Transform::from_xyz(x, y, 0.0),
+            texture,
+            sprite: Sprite {
+                color: Color::rgba(2., 2., 2., 1.),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        inertia_volume,
+        Pickup::Salvage(value),
     ));
 }
 
@@ -60,8 +90,4 @@ fn player_pickup_system(
             }
         }
     }
-}
-
-fn cargo_ship_drop_system(mut commands: Commands, game_assets: Res<GameAssets>) {
-    // TODO
 }

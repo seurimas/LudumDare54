@@ -2,7 +2,7 @@ use bevy::ui::widget::UiImageSize;
 
 use crate::prelude::*;
 
-const INDICATOR_DISTANCE: f32 = 100.0;
+const INDICATOR_DISTANCE: f32 = 300.0;
 const INDICATOR_TEXT_OFFSET: f32 = 20.0;
 
 pub struct IndicatorsPlugin;
@@ -17,9 +17,63 @@ impl Plugin for IndicatorsPlugin {
 }
 
 #[derive(Component, Debug)]
-pub struct DistantIndicator {
-    pub indicator: Entity,
-    pub indicator_text: Entity,
+pub enum DistantIndicator {
+    Local {
+        indicator: Entity,
+        indicator_text: Entity,
+    },
+    System {
+        indicator: Entity,
+        indicator_text: Entity,
+        direction: Vec2,
+    },
+}
+
+impl DistantIndicator {
+    pub fn new_local(indicator: Entity, indicator_text: Entity) -> Self {
+        Self::Local {
+            indicator,
+            indicator_text,
+        }
+    }
+
+    pub fn new_system(indicator: Entity, indicator_text: Entity, direction: Vec2) -> Self {
+        Self::System {
+            indicator,
+            indicator_text,
+            direction,
+        }
+    }
+}
+
+pub fn create_indicator_with_text(
+    commands: &mut Commands,
+    game_assets: &GameAssets,
+) -> (Entity, Entity) {
+    let indicator = commands
+        .spawn(ImageBundle {
+            image: UiImage::new(game_assets.indicator.clone()),
+            style: Style {
+                position_type: PositionType::Absolute,
+                width: Val::Px(16.0),
+                height: Val::Px(32.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .id();
+
+    let indicator_text = commands
+        .spawn(TextBundle {
+            text: Text::from_section("", TextStyle::default()),
+            style: Style {
+                position_type: PositionType::Absolute,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .id();
+    (indicator, indicator_text)
 }
 
 fn display_indicator_system(
@@ -42,22 +96,28 @@ fn display_indicator_system(
     let indicator_directions = queries
         .p1()
         .iter()
-        .map(|(cargo_ship, transform)| {
-            let translation = transform.translation;
-            let x = translation.x - camera_translation.x;
-            let y = translation.y - camera_translation.y;
-            (
-                cargo_ship.indicator,
-                cargo_ship.indicator_text,
-                Vec3::new(x, y, 0.0),
-            )
+        .map(|(indicator, transform)| match indicator {
+            DistantIndicator::Local {
+                indicator,
+                indicator_text,
+            } => {
+                let translation = transform.translation;
+                let x = translation.x - camera_translation.x;
+                let y = translation.y - camera_translation.y;
+                (false, *indicator, *indicator_text, Vec3::new(x, y, 0.0))
+            }
+            DistantIndicator::System {
+                indicator,
+                indicator_text,
+                direction,
+            } => (true, *indicator, *indicator_text, direction.extend(0.)),
         })
         .collect::<Vec<_>>();
-    for (indicator, indicator_text, direction) in indicator_directions {
+    for (system, indicator, indicator_text, direction) in indicator_directions {
         let distance = direction.length();
         let direction = direction.normalize();
         let angle = (-direction.y).atan2(direction.x);
-        let visible = if distance > INDICATOR_DISTANCE {
+        let visible = if system || distance > INDICATOR_DISTANCE {
             Visibility::Visible
         } else {
             Visibility::Hidden
@@ -90,7 +150,7 @@ fn display_indicator_system(
                     + -direction.y * INDICATOR_DISTANCE
                     + INDICATOR_TEXT_OFFSET,
             );
-            text.as_mut().unwrap().sections[0].value = format!("{:.0}", distance);
+            if !system {}
         }
     }
 }

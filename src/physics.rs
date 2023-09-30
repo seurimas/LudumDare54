@@ -12,7 +12,10 @@ impl Plugin for PhysicsPlugin {
                 PostUpdate,
                 maintain_spacial_grid.after(TransformSystem::TransformPropagate),
             )
-            .add_systems(Update, (generate_collisions, apply_velocity));
+            .add_systems(
+                Update,
+                (generate_collisions, apply_velocity, apply_rotation),
+            );
     }
 }
 
@@ -304,8 +307,6 @@ fn generate_collisions(
                 let other_position = other_transform.translation().truncate();
                 let diff = position - other_position;
                 if let Some(collision) = inertia_volume.find_collision(other_volume, diff, dt) {
-                    println!("collision: {} {:?} {:?}", collision, entity, other);
-                    println!("diff {} {:?} {:?}", diff, inertia_volume, other_volume);
                     collisions.send(Collision {
                         e0: entity,
                         e1: other,
@@ -320,6 +321,16 @@ fn generate_collisions(
 fn apply_velocity(time: Res<Time>, mut inertia_volumes: Query<(&mut Transform, &InertiaVolume)>) {
     for (mut transform, inertia_volume) in inertia_volumes.iter_mut() {
         transform.translation += inertia_volume.velocity.extend(0.0) * time.delta_seconds();
+    }
+}
+
+fn apply_rotation(
+    time: Res<Time>,
+    mut inertia_volumes: Query<(&mut Transform, &mut InertiaVolume)>,
+) {
+    for (mut transform, mut inertia_volume) in inertia_volumes.iter_mut() {
+        inertia_volume.rotation += inertia_volume.rotation_velocity * time.delta_seconds();
+        transform.rotation = Quat::from_rotation_z(inertia_volume.rotation);
     }
 }
 

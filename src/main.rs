@@ -7,6 +7,7 @@ mod pickups;
 mod player;
 mod prelude;
 mod trade_routes;
+mod turrets;
 
 #[macro_use]
 extern crate lazy_static;

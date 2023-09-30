@@ -31,6 +31,8 @@ pub struct GameAssets {
     pub indicator: Handle<Image>,
     #[asset(path = "sprites/exotic.png")]
     pub exotic: Handle<Image>,
+    #[asset(path = "sprites/salvage.png")]
+    pub salvage: Handle<Image>,
     // Need to load atlas and jsons, then create skeletons.
     #[asset(path = "spines/player_ship.atlas")]
     pub player_ship_atlas: Handle<Atlas>,
