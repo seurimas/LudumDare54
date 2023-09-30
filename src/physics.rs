@@ -8,7 +8,11 @@ impl Plugin for PhysicsPlugin {
             .init_resource::<SpacialGrid>()
             .add_systems(
                 Update,
-                (maintain_spacial_grid, generate_collisions, apply_velocity),
+                (
+                    maintain_spacial_grid,
+                    generate_collisions.after(maintain_spacial_grid),
+                    apply_velocity,
+                ),
             );
     }
 }
@@ -259,7 +263,10 @@ fn maintain_spacial_grid(
             }
         } else {
             spacial_grid.insert(entity, position);
-            commands.entity(entity).insert(SpacialReference(position));
+            commands.add(InsertSafe {
+                entity,
+                bundle: SpacialReference(position),
+            });
         }
     }
 }
@@ -267,21 +274,29 @@ fn maintain_spacial_grid(
 fn generate_collisions(
     time: Res<Time>,
     spacial_grid: Res<SpacialGrid>,
-    inertia_volumes: Query<(Entity, &GlobalTransform, &InertiaVolume)>,
+    inertia_volumes: Query<(Entity, &GlobalTransform, &InertiaVolume, Option<&Parent>)>,
     mut collisions: EventWriter<Collision>,
 ) {
     let dt = time.delta_seconds();
-    for (entity, transform, inertia_volume) in inertia_volumes.iter() {
+    for (entity, transform, inertia_volume, m_parent) in inertia_volumes.iter() {
         let position = transform.translation().truncate();
         for other in spacial_grid.query(position) {
-            if other == entity {
+            if other == entity || m_parent.map(|p| p.get() == other).unwrap_or(false) {
                 continue;
             }
-            let (_, other_transform, other_volume) = inertia_volumes.get(other).unwrap();
+            let (_, other_transform, other_volume, other_parent) =
+                inertia_volumes.get(other).unwrap();
+            if other_parent.map(|p| p.get() == entity).unwrap_or(false) {
+                continue;
+            } else if let (Some(my_parent), Some(other_parent)) = (m_parent, other_parent) {
+                if my_parent.get() == other_parent.get() {
+                    continue;
+                }
+            }
             let other_position = other_transform.translation().truncate();
             let diff = position - other_position;
             if let Some(collision) = inertia_volume.find_collision(other_volume, diff, dt) {
-                println!("collision: {}", collision);
+                println!("collision: {} {:?} {:?}", collision, entity, other);
                 collisions.send(Collision {
                     e0: entity,
                     e1: other,

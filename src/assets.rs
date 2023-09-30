@@ -82,7 +82,7 @@ fn create_lasers(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    let player_laser_mesh = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(0.5, 1.0))));
+    let player_laser_mesh = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(5., 2.5))));
     let player_laser_material =
         materials.add(ColorMaterial::from(Color::rgba(7.5, 0.0, 7.5, 10.0)));
 

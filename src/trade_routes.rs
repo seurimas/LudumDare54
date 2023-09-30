@@ -12,9 +12,43 @@ impl Plugin for TradeRoutesPlugin {
 #[derive(Component)]
 pub struct CargoShip;
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct CargoSection {
-    // pub
+    pub index: usize,
+    pub skeleton_bone: &'static str,
+    pub hit_animation: &'static str,
+}
+
+const SECTION_BONES: [&'static str; 8] = [
+    "cargo0", "cargo1", "cargo2", "cargo3", "cargo4", "cargo5", "cargo6", "cargo7",
+];
+const SECTION_HIT_ANIMATIONS: [&'static str; 8] = [
+    "jiggle0", "jiggle1", "jiggle2", "jiggle3", "jiggle4", "jiggle5", "jiggle6", "jiggle7",
+];
+const SECTION_OFFSETS: [(f32, f32); 8] = [
+    (-144., -16.),
+    (-80., -16.),
+    (-16., -16.),
+    (48., -16.),
+    (-144., 16.),
+    (-80., 16.),
+    (-16., 16.),
+    (48., 16.),
+];
+
+impl CargoSection {
+    pub fn bundle(index: usize) -> (Transform, GlobalTransform, Self, InertiaVolume) {
+        (
+            Transform::from_xyz(SECTION_OFFSETS[index].0, SECTION_OFFSETS[index].1, 0.),
+            GlobalTransform::default(),
+            CargoSection {
+                index,
+                skeleton_bone: SECTION_BONES[index],
+                hit_animation: SECTION_HIT_ANIMATIONS[index],
+            },
+            InertiaVolume::new(1.0, 32.0),
+        )
+    }
 }
 
 fn spawn_cargo_ship(
@@ -41,18 +75,30 @@ fn spawn_cargo_ship(
         })
         .id();
 
-    commands.spawn((
-        SpineBundle {
-            skeleton: skeletons.cargo_ship.clone(),
-            ..Default::default()
-        },
-        InertiaVolume::new(1.0, 1.0),
-        DistantIndicator {
-            indicator,
-            indicator_text,
-        },
-        CargoShip,
-    ));
+    commands
+        .spawn((
+            SpineBundle {
+                skeleton: skeletons.cargo_ship.clone(),
+                ..Default::default()
+            },
+            InertiaVolume::new(1.0, 1.0),
+            DistantIndicator {
+                indicator,
+                indicator_text,
+            },
+            CargoShip,
+        ))
+        .with_children(|parent| {
+            // Spawn all 8 cargo sections.
+            parent.spawn((CargoSection::bundle(0),));
+            parent.spawn((CargoSection::bundle(1),));
+            parent.spawn((CargoSection::bundle(2),));
+            parent.spawn((CargoSection::bundle(3),));
+            parent.spawn((CargoSection::bundle(4),));
+            parent.spawn((CargoSection::bundle(5),));
+            parent.spawn((CargoSection::bundle(6),));
+            parent.spawn((CargoSection::bundle(7),));
+        });
 }
 
 const JET_GREENNESS: f32 = 24.0;

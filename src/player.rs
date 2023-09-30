@@ -1,15 +1,8 @@
 use std::f32::consts::PI;
 
 use bevy::{
-    core_pipeline::{
-        bloom::{BloomCompositeMode, BloomSettings},
-        tonemapping::Tonemapping,
-    },
+    core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping},
     sprite::MaterialMesh2dBundle,
-};
-use bevy_spine::{
-    rusty_spine::{c_interface::CTmpMut, Skeleton, Slot},
-    SkeletonController, SpineBundle,
 };
 
 use crate::{assets::Skeletons, prelude::*};
@@ -84,10 +77,11 @@ fn spawn_player(mut commands: Commands, skeletons: Res<Skeletons>) {
                 hdr: true,
                 ..Default::default()
             },
-            tonemapping: Tonemapping::TonyMcMapface,
+            tonemapping: Tonemapping::Reinhard,
             ..default()
         },
-        BloomSettings::OLD_SCHOOL,
+        // BloomSettings::OLD_SCHOOL,
+        BloomSettings::default(),
     ));
 }
 
@@ -200,6 +194,7 @@ fn player_laser_system(
                 player.main_cooldown = player.main_speed;
                 let mut transform = Transform::from_xyz(0.0, 0.0, 0.0);
                 transform.translation = location.translation;
+                transform.translation.z = 10.0;
                 transform.rotation = location.rotation;
                 let mut inertia = InertiaVolume::new(1.0, 1.0);
                 inertia.velocity = my_inertia.velocity
@@ -212,6 +207,7 @@ fn player_laser_system(
                         ..Default::default()
                     },
                     inertia,
+                    Bullet::Player,
                 ));
             }
         }

@@ -1,4 +1,5 @@
 mod assets;
+mod bullets;
 mod game_state;
 mod indicators;
 mod physics;
@@ -11,6 +12,7 @@ mod trade_routes;
 extern crate lazy_static;
 use assets::GameAssetsPlugin;
 use bevy_spine::SpinePlugin;
+use bullets::BulletsPlugin;
 use indicators::IndicatorsPlugin;
 use physics::PhysicsPlugin;
 use pickups::PickupsPlugin;
@@ -26,6 +28,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins((
             SpinePlugin,
+            BulletsPlugin,
             TradeRoutesPlugin,
             IndicatorsPlugin,
             GameAssetsPlugin,
