@@ -1,3 +1,5 @@
+use bevy::transform::TransformSystem;
+
 use crate::prelude::*;
 
 pub struct PhysicsPlugin;
@@ -7,13 +9,10 @@ impl Plugin for PhysicsPlugin {
         app.add_event::<Collision>()
             .init_resource::<SpacialGrid>()
             .add_systems(
-                Update,
-                (
-                    maintain_spacial_grid,
-                    generate_collisions.after(maintain_spacial_grid),
-                    apply_velocity,
-                ),
-            );
+                PostUpdate,
+                maintain_spacial_grid.after(TransformSystem::TransformPropagate),
+            )
+            .add_systems(Update, (generate_collisions, apply_velocity));
     }
 }
 
@@ -306,6 +305,7 @@ fn generate_collisions(
                 let diff = position - other_position;
                 if let Some(collision) = inertia_volume.find_collision(other_volume, diff, dt) {
                     println!("collision: {} {:?} {:?}", collision, entity, other);
+                    println!("diff {} {:?} {:?}", diff, inertia_volume, other_volume);
                     collisions.send(Collision {
                         e0: entity,
                         e1: other,

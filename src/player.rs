@@ -43,6 +43,9 @@ pub struct Player {
     // Cooldown for main weapon.
     pub main_cooldown: f32,
     pub main_speed: f32,
+    // Cargo values
+    pub exotic_material: f32,
+    pub salvage: f32,
 }
 
 impl Player {
@@ -56,6 +59,8 @@ impl Player {
             thrust_braking_strength: 400.0,
             main_cooldown: 0.0,
             main_speed: 1.0 / 2.0,
+            exotic_material: 0.0,
+            salvage: 0.0,
         }
     }
 }

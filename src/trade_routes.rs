@@ -4,13 +4,32 @@ pub struct TradeRoutesPlugin;
 
 impl Plugin for TradeRoutesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Playing), spawn_cargo_ship)
+        app
+            //.add_systems(OnEnter(GameState::Playing), spawn_cargo_ship)
             .add_systems(Update, (cargo_ship_jet_animation_system,));
     }
 }
 
 #[derive(Component)]
-pub struct CargoShip;
+pub struct CargoShip {
+    sections_health: [f32; 8],
+}
+
+impl CargoShip {
+    pub fn new() -> Self {
+        Self {
+            sections_health: [100.0; 8],
+        }
+    }
+
+    pub fn damage_section(&mut self, section: usize, damage: f32) {
+        self.sections_health[section] -= damage;
+    }
+
+    pub fn section_alive(&self, section: usize) -> bool {
+        self.sections_health[section] > 0.0
+    }
+}
 
 #[derive(Component, Debug)]
 pub struct CargoSection {
@@ -86,7 +105,7 @@ fn spawn_cargo_ship(
                 indicator,
                 indicator_text,
             },
-            CargoShip,
+            CargoShip::new(),
         ))
         .with_children(|parent| {
             // Spawn all 8 cargo sections.
