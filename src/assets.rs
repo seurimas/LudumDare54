@@ -13,7 +13,10 @@ impl Plugin for GameAssetsPlugin {
         app.add_loading_state(
             LoadingState::new(GameState::Loading).continue_to_state(GameState::Playing),
         )
-        .add_systems(OnExit(GameState::Loading), create_skeletons)
+        .add_systems(
+            OnExit(GameState::Loading),
+            (create_lasers, create_skeletons),
+        )
         .add_collection_to_loading_state::<_, GameAssets>(GameState::Loading);
     }
 }
@@ -33,11 +36,22 @@ pub struct GameAssets {
     pub player_ship_atlas: Handle<Atlas>,
     #[asset(path = "spines/player_ship.json")]
     pub player_ship_json: Handle<SkeletonJson>,
+    #[asset(path = "spines/cargo_ship.atlas")]
+    pub cargo_ship_atlas: Handle<Atlas>,
+    #[asset(path = "spines/cargo_ship.json")]
+    pub cargo_ship_json: Handle<SkeletonJson>,
 }
 
 #[derive(Resource)]
 pub struct Skeletons {
     pub player_ship: Handle<SkeletonData>,
+    pub cargo_ship: Handle<SkeletonData>,
+}
+
+#[derive(Resource)]
+pub struct Lasers {
+    pub player_laser_mesh: Handle<Mesh>,
+    pub player_laser_material: Handle<ColorMaterial>,
 }
 
 fn create_skeletons(
@@ -51,5 +65,29 @@ fn create_skeletons(
     );
     let player_ship = skeletons.add(player_ship_skeleton);
 
-    commands.insert_resource(Skeletons { player_ship });
+    let cargo_ship_skeleton = SkeletonData::new_from_json(
+        assets.cargo_ship_json.clone(),
+        assets.cargo_ship_atlas.clone(),
+    );
+    let cargo_ship = skeletons.add(cargo_ship_skeleton);
+
+    commands.insert_resource(Skeletons {
+        player_ship,
+        cargo_ship,
+    });
+}
+
+fn create_lasers(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    let player_laser_mesh = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(0.5, 1.0))));
+    let player_laser_material =
+        materials.add(ColorMaterial::from(Color::rgba(7.5, 0.0, 7.5, 10.0)));
+
+    commands.insert_resource(Lasers {
+        player_laser_mesh,
+        player_laser_material,
+    });
 }

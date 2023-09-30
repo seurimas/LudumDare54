@@ -1,0 +1,13 @@
+cargo_ship.png
+size:508,228
+filter:Linear,Linear
+pma:true
+CargoBody
+bounds:2,2,441,224
+offsets:16,16,512,256
+CargoSection
+bounds:445,164,61,62
+offsets:1,1,64,64
+Jet
+bounds:445,34,128,16
+rotate:90
