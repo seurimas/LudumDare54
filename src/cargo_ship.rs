@@ -3,6 +3,7 @@ use bevy::ui::widget::UiImageSize;
 use crate::prelude::*;
 
 const INDICATOR_DISTANCE: f32 = 100.0;
+const INDICATOR_TEXT_OFFSET: f32 = 20.0;
 
 pub struct CargoShipPlugin;
 
@@ -19,6 +20,7 @@ impl Plugin for CargoShipPlugin {
 #[derive(Component, Debug)]
 pub struct CargoShip {
     pub indicator: Entity,
+    pub indicator_text: Entity,
 }
 
 fn spawn_cargo_ship(mut commands: Commands, game_assets: Res<GameAssets>) {
@@ -33,6 +35,12 @@ fn spawn_cargo_ship(mut commands: Commands, game_assets: Res<GameAssets>) {
             ..Default::default()
         })
         .id();
+    let indicator_text = commands
+        .spawn(TextBundle {
+            text: Text::from_section("", TextStyle::default()),
+            ..Default::default()
+        })
+        .id();
     commands.spawn((
         SpriteBundle {
             transform: Transform::from_xyz(0.0, 0.0, 0.0),
@@ -40,7 +48,10 @@ fn spawn_cargo_ship(mut commands: Commands, game_assets: Res<GameAssets>) {
             ..Default::default()
         },
         InertiaVolume::new(Vec2::new(0.0, 0.0), 0.0, 1.0, 1.0),
-        CargoShip { indicator },
+        CargoShip {
+            indicator,
+            indicator_text,
+        },
     ));
 }
 
@@ -49,7 +60,14 @@ fn cargo_ship_indicator_system(
     mut queries: ParamSet<(
         Query<&Transform, With<Camera2d>>,
         Query<(&CargoShip, &Transform)>,
-        Query<(&mut Visibility, &mut Transform, &mut Style)>,
+        Query<(
+            &mut Visibility,
+            &mut Transform,
+            &mut Style,
+            Option<&UiImageSize>,
+            Option<&mut Text>,
+            Option<&bevy::text::TextLayoutInfo>,
+        )>,
     )>,
 ) {
     let camera_translation = queries.p0().single().translation;
@@ -61,22 +79,51 @@ fn cargo_ship_indicator_system(
             let translation = transform.translation;
             let x = translation.x - camera_translation.x;
             let y = translation.y - camera_translation.y;
-            (cargo_ship.indicator, Vec3::new(x, y, 0.0))
+            (
+                cargo_ship.indicator,
+                cargo_ship.indicator_text,
+                Vec3::new(x, y, 0.0),
+            )
         })
         .collect::<Vec<_>>();
-    for (indicator, direction) in indicator_directions {
-        if let Ok((mut visibility, mut transform, mut style)) = queries.p2().get_mut(indicator) {
-            let distance = direction.length();
-            let direction = direction.normalize();
-            let angle = (-direction.y).atan2(direction.x);
-            *visibility = if distance > INDICATOR_DISTANCE {
-                Visibility::Visible
-            } else {
-                Visibility::Hidden
-            };
-            style.left = Val::Px(window_size.width() / 2.0 + direction.x * INDICATOR_DISTANCE);
-            style.top = Val::Px(window_size.height() / 2.0 + -direction.y * INDICATOR_DISTANCE);
+    for (indicator, indicator_text, direction) in indicator_directions {
+        let distance = direction.length();
+        let direction = direction.normalize();
+        let angle = (-direction.y).atan2(direction.x);
+        let visible = if distance > INDICATOR_DISTANCE {
+            Visibility::Visible
+        } else {
+            Visibility::Hidden
+        };
+        // Place the indicator image at the edge of the screen
+        if let Ok((mut visibility, mut transform, mut style, image_size, _text, _text_layout)) =
+            queries.p2().get_mut(indicator)
+        {
+            *visibility = visible;
+            style.left = Val::Px(
+                window_size.width() / 2.0 + direction.x * INDICATOR_DISTANCE
+                    - image_size.unwrap().size().x / 2.0,
+            );
+            style.top = Val::Px(
+                window_size.height() / 2.0 + -direction.y * INDICATOR_DISTANCE
+                    - image_size.unwrap().size().y / 2.0,
+            );
             transform.rotation = Quat::from_rotation_z(angle);
+        }
+        if let Ok((mut visibility, _transform, mut style, _image_size, mut text, text_layout)) =
+            queries.p2().get_mut(indicator_text)
+        {
+            *visibility = visible;
+            style.left = Val::Px(
+                window_size.width() / 2.0 + direction.x * INDICATOR_DISTANCE
+                    - text_layout.unwrap().size.x / 2.0,
+            );
+            style.top = Val::Px(
+                window_size.height() / 2.0
+                    + -direction.y * INDICATOR_DISTANCE
+                    + INDICATOR_TEXT_OFFSET,
+            );
+            text.as_mut().unwrap().sections[0].value = format!("{:.0}", distance);
         }
     }
 }

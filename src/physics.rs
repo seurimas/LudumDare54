@@ -39,6 +39,29 @@ impl InertiaVolume {
         self.apply_force(force, dt);
     }
 
+    pub fn apply_thrust_force_limited(&mut self, force_length: f32, limit: f32, dt: f32) {
+        let thrust_vector = Vec2::new(self.rotation.cos(), self.rotation.sin());
+        let current_forward_speed = self.velocity.dot(thrust_vector);
+        if force_length > 0.0 && current_forward_speed >= limit {
+            return;
+        } else if force_length < 0.0 && current_forward_speed <= -limit {
+            return;
+        }
+        self.apply_force(thrust_vector * force_length, dt);
+    }
+
+    pub fn apply_thrust_braking(&mut self, braking: f32, dt: f32) -> f32 {
+        let thrust_vector = Vec2::new(self.rotation.cos(), self.rotation.sin());
+        let tangent_vector = self.velocity - self.velocity.project_onto(thrust_vector);
+        if tangent_vector.length_squared() == 0.0 {
+            return 0.0;
+        }
+        let right = tangent_vector.angle_between(thrust_vector) < 0.0;
+        let braking_force = tangent_vector.normalize() * braking;
+        self.apply_force(-braking_force, dt);
+        tangent_vector.length() * if right { -1.0 } else { 1.0 }
+    }
+
     pub fn apply_rotation_force(&mut self, rotation: f32, dt: f32) {
         self.rotation += rotation * dt;
     }

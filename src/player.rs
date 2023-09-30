@@ -22,14 +22,20 @@ impl Plugin for PlayerPlugin {
 #[derive(Component)]
 pub struct Player {
     pub thrust: f32,
+    pub side_braking: f32,
+    pub speed_limit: f32,
     pub engine_strength: f32,
+    pub thrust_braking_strength: f32,
 }
 
 impl Player {
     pub fn new() -> Self {
         Self {
             thrust: 0.0,
+            side_braking: 0.0,
+            speed_limit: 3.0,
             engine_strength: 5.0,
+            thrust_braking_strength: 2.0,
         }
     }
 }
@@ -78,11 +84,24 @@ fn player_movement_system(
     let dt = time.delta_seconds();
     for (mut player, mut inertia) in players.iter_mut() {
         if input.pressed(KeyCode::W) {
-            inertia.apply_thrust_force(player.engine_strength, dt);
+            inertia.apply_thrust_force_limited(player.engine_strength, player.speed_limit, dt);
             player.thrust = 1.0;
+            player.side_braking = inertia.apply_thrust_braking(player.thrust_braking_strength, dt);
+            println!(
+                "thrust: {} side_braking: {}",
+                player.thrust, player.side_braking
+            );
         } else if input.pressed(KeyCode::S) {
-            inertia.apply_thrust_force(-player.engine_strength, dt);
+            inertia.apply_thrust_force_limited(-player.engine_strength, player.speed_limit, dt);
             player.thrust = -1.0;
+            player.side_braking = inertia.apply_thrust_braking(player.thrust_braking_strength, dt);
+            println!(
+                "thrust: {} side_braking: {}",
+                player.thrust, player.side_braking
+            );
+        } else {
+            player.thrust = 0.0;
+            player.side_braking = 0.0;
         }
         if input.pressed(KeyCode::A) {
             inertia.apply_rotation_force(5.0, dt);
