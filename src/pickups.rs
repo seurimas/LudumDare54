@@ -14,7 +14,7 @@ fn spawn_debug_drops(mut commands: Commands, game_assets: Res<GameAssets>) {
             transform: Transform::from_xyz(100.0, 0.0, 0.0),
             texture: game_assets.drop.clone(),
             sprite: Sprite {
-                color: Color::rgb(3., 3., 0.),
+                color: Color::rgb(30., 30., 0.),
                 ..Default::default()
             },
             ..Default::default()

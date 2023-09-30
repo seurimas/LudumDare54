@@ -1,5 +1,5 @@
 player_ship.png
-size:243,176
+size:258,176
 filter:Linear,Linear
 pma:true
 Body
@@ -9,3 +9,6 @@ rotate:90
 Jet
 bounds:225,46,128,16
 rotate:90
+Turret
+bounds:225,12,31,32
+offsets:0,0,32,32

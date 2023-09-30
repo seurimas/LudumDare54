@@ -19,7 +19,8 @@ impl Plugin for PlayerPlugin {
                 (
                     player_camera_system,
                     player_movement_system,
-                    player_laser_system.run_if(in_state(GameState::Playing)),
+                    player_laser_aim_system.run_if(in_state(GameState::Playing)),
+                    player_laser_fire_system.run_if(in_state(GameState::Playing)),
                     player_animate_system,
                     player_jet_animation_system,
                 ),
@@ -33,6 +34,7 @@ pub struct Player {
     // Values for animation, set by player controls.
     pub thrust: f32,
     pub side_braking: f32,
+    pub aim_rotation: f32,
     // Value for forward thrust limit.
     pub speed_limit: f32,
     // How big of a force we have for forward and sideways thrust.
@@ -48,6 +50,7 @@ impl Player {
         Self {
             thrust: 0.0,
             side_braking: 0.0,
+            aim_rotation: 0.0,
             speed_limit: 600.0,
             engine_strength: 600.0,
             thrust_braking_strength: 400.0,
@@ -102,7 +105,7 @@ fn player_camera_system(
 
 fn player_animate_system(mut players: Query<(&Player, &InertiaVolume, &mut Transform)>) {
     for (_player, inertia, mut transform) in players.iter_mut() {
-        transform.rotation = Quat::from_rotation_z(inertia.rotation);
+        transform.rotation = Quat::from_rotation_z(inertia.rotation());
     }
 }
 
@@ -118,7 +121,7 @@ fn player_movement_system(
         if input.pressed(KeyCode::W) {
             inertia.apply_thrust_force_limited(player.engine_strength, player.speed_limit, dt);
             player.thrust = player.engine_strength;
-            if !input.pressed(KeyCode::ShiftLeft) {
+            if input.pressed(KeyCode::ShiftLeft) {
                 player.side_braking =
                     inertia.apply_thrust_braking(player.thrust_braking_strength, dt);
             } else {
@@ -127,10 +130,7 @@ fn player_movement_system(
         } else if input.pressed(KeyCode::S) {
             inertia.apply_thrust_force_limited(-player.engine_strength, player.speed_limit, dt);
             player.thrust = -player.engine_strength;
-            if !input.pressed(KeyCode::ShiftLeft)
-                && !input.pressed(KeyCode::Q)
-                && !input.pressed(KeyCode::E)
-            {
+            if input.pressed(KeyCode::ShiftLeft) {
                 player.side_braking =
                     inertia.apply_thrust_braking(player.thrust_braking_strength, dt);
             } else {
@@ -145,7 +145,7 @@ fn player_movement_system(
                 dt,
             );
             player.side_braking += player.thrust_braking_strength;
-            if !input.pressed(KeyCode::ShiftLeft)
+            if input.pressed(KeyCode::ShiftLeft)
                 && !input.pressed(KeyCode::W)
                 && !input.pressed(KeyCode::S)
             {
@@ -163,7 +163,7 @@ fn player_movement_system(
                 dt,
             );
             player.side_braking += -player.thrust_braking_strength;
-            if !input.pressed(KeyCode::ShiftLeft)
+            if input.pressed(KeyCode::ShiftLeft)
                 && !input.pressed(KeyCode::W)
                 && !input.pressed(KeyCode::S)
             {
@@ -180,38 +180,146 @@ fn player_movement_system(
     }
 }
 
-fn player_laser_system(
-    mut commands: Commands,
-    time: Res<Time>,
-    mut players: Query<(&mut Player, &Transform, &InertiaVolume)>,
-    lasers: Res<Lasers>,
-    input: Res<Input<KeyCode>>,
+fn get_turret_location(spine: &Spine, turret_name: &'static str) -> Vec2 {
+    if let Some(bone) = spine.skeleton.find_bone(turret_name) {
+        // "world" is relative to the skeleton, not the whole world.
+        bone.world_position().into()
+    } else {
+        Vec2::ZERO
+    }
+}
+
+fn get_turret_rotation(spine: &Spine, turret_name: &'static str) -> f32 {
+    if let Some(bone) = spine.skeleton.find_bone(turret_name) {
+        bone.rotation() * PI / 180.0
+    } else {
+        0.0
+    }
+}
+
+fn rotate_turret(spine: &mut Spine, turret_name: &'static str, rotation: f32) {
+    if let Some(mut bone) = spine.skeleton.find_bone_mut(turret_name) {
+        bone.set_rotation(rotation * 180.0 / PI);
+    }
+}
+
+fn player_laser_aim_system(
+    mut mouse_location: Local<Vec2>,
+    camera: Query<(&Camera, &GlobalTransform)>,
+    mut players: Query<(&mut Player, &Transform, &InertiaVolume, &mut Spine)>,
+    mut cursor_moved_events: EventReader<CursorMoved>,
 ) {
-    for (mut player, location, my_inertia) in players.iter_mut() {
-        player.main_cooldown -= time.delta_seconds();
-        if input.pressed(KeyCode::Space) {
-            if player.main_cooldown <= 0.0 {
-                player.main_cooldown = player.main_speed;
-                let mut transform = Transform::from_xyz(0.0, 0.0, 0.0);
-                transform.translation = location.translation;
-                transform.translation.z = 10.0;
-                transform.rotation = location.rotation;
-                let mut inertia = InertiaVolume::new(1.0, 1.0);
-                inertia.velocity = my_inertia.velocity
-                    + (location.rotation.mul_vec3(Vec3::new(1.0, 0.0, 0.0)) * 1000.0).truncate();
-                commands.spawn((
-                    MaterialMesh2dBundle {
-                        mesh: lasers.player_laser_mesh.clone().into(),
-                        material: lasers.player_laser_material.clone(),
-                        transform,
-                        ..Default::default()
-                    },
-                    inertia,
-                    Bullet::Player,
-                ));
+    let (camera, camera_transform) = camera.single();
+    if let Some(cursor_moved_event) = cursor_moved_events.iter().last() {
+        *mouse_location = cursor_moved_event.position;
+    }
+    if let Some(mouse_world_location) = camera
+        .viewport_to_world(camera_transform, *mouse_location)
+        .map(|v| v.origin.truncate())
+    {
+        for (mut player, location, my_inertia, mut spine) in players.iter_mut() {
+            let turrets = ["left_turret", "right_turret", "forward_turret"];
+            for turret_name in turrets.iter() {
+                let local_turret_location = get_turret_location(&spine, turret_name);
+                let turret_location = location.transform_point(local_turret_location.extend(0.0));
+                let turret_direction = mouse_world_location - turret_location.truncate();
+                rotate_turret(
+                    &mut *spine,
+                    turret_name,
+                    turret_direction.y.atan2(turret_direction.x) - my_inertia.rotation(),
+                );
+            }
+            let relative_location = (mouse_world_location - location.translation.truncate());
+            player.aim_rotation = relative_location.y.atan2(relative_location.x);
+            player.aim_rotation -= my_inertia.rotation();
+            if player.aim_rotation > PI {
+                player.aim_rotation -= 2.0 * PI;
+            } else if player.aim_rotation < -PI {
+                player.aim_rotation += 2.0 * PI;
             }
         }
     }
+}
+
+fn player_laser_fire_system(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut players: Query<(&mut Player, &Transform, &InertiaVolume, &Spine)>,
+    lasers: Res<Lasers>,
+    input: Res<Input<MouseButton>>,
+) {
+    for (mut player, location, my_inertia, spine) in players.iter_mut() {
+        player.main_cooldown -= time.delta_seconds();
+        if input.pressed(MouseButton::Left) {
+            if player.main_cooldown <= 0.0 {
+                player.main_cooldown = player.main_speed;
+                if player.aim_rotation < PI * 5. / 8. && player.aim_rotation > -PI * 5. / 8. {
+                    fire_laser_from_turret(
+                        "forward_turret",
+                        spine,
+                        location,
+                        my_inertia,
+                        &mut commands,
+                        &lasers,
+                    );
+                }
+                if player.aim_rotation > -PI / 8. || player.aim_rotation < -PI * 7. / 8. {
+                    fire_laser_from_turret(
+                        "left_turret",
+                        spine,
+                        location,
+                        my_inertia,
+                        &mut commands,
+                        &lasers,
+                    );
+                }
+                if player.aim_rotation < PI / 8. || player.aim_rotation > PI * 7. / 8. {
+                    fire_laser_from_turret(
+                        "right_turret",
+                        spine,
+                        location,
+                        my_inertia,
+                        &mut commands,
+                        &lasers,
+                    );
+                }
+            }
+        }
+    }
+}
+
+fn fire_laser_from_turret(
+    turret_name: &'static str,
+    spine: &Spine,
+    location: &Transform,
+    my_inertia: &InertiaVolume,
+    commands: &mut Commands<'_, '_>,
+    lasers: &Res<'_, Lasers>,
+) {
+    // Build a transform for the bullet.
+    let mut transform = Transform::from_xyz(0.0, 0.0, 0.0);
+    // Shoot from the appropriate turret.
+    let local_turret_location = get_turret_location(&spine, turret_name);
+    transform.translation = location.transform_point(local_turret_location.extend(10.0));
+    // Shoot in the appropriate direction.
+    let turret_rotation = get_turret_rotation(&spine, turret_name);
+    let total_rotation = turret_rotation + my_inertia.rotation();
+    let direction = Vec2::new(f32::cos(total_rotation), f32::sin(total_rotation));
+    transform.rotation = Quat::from_rotation_z(total_rotation);
+    // Give it some speed!
+    let mut inertia = InertiaVolume::new(1.0, 1.0);
+    inertia.velocity = my_inertia.velocity + direction * 1000.0;
+
+    commands.spawn((
+        MaterialMesh2dBundle {
+            mesh: lasers.player_laser_mesh.clone().into(),
+            material: lasers.player_laser_material.clone(),
+            transform,
+            ..Default::default()
+        },
+        inertia,
+        Bullet::Player,
+    ));
 }
 
 const JET_BLUENESS: f32 = 24.0;

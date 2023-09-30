@@ -20,7 +20,7 @@ impl Plugin for PhysicsPlugin {
 #[derive(Component, Debug)]
 pub struct InertiaVolume {
     pub velocity: Vec2,
-    pub rotation: f32,
+    rotation: f32,
     pub rotation_velocity: f32,
     pub mass: f32,
     pub radius: f32,
@@ -96,8 +96,17 @@ impl InertiaVolume {
         tangent_vector.length() * if right { -1.0 } else { 1.0 }
     }
 
+    pub fn rotation(&self) -> f32 {
+        self.rotation
+    }
+
     pub fn apply_rotation_force(&mut self, rotation: f32, dt: f32) {
         self.rotation += rotation * dt;
+        if self.rotation > std::f32::consts::PI {
+            self.rotation -= std::f32::consts::PI * 2.0;
+        } else if self.rotation < -std::f32::consts::PI {
+            self.rotation += std::f32::consts::PI * 2.0;
+        }
     }
 
     pub fn find_collision(
@@ -284,24 +293,25 @@ fn generate_collisions(
             if other == entity || m_parent.map(|p| p.get() == other).unwrap_or(false) {
                 continue;
             }
-            let (_, other_transform, other_volume, other_parent) =
-                inertia_volumes.get(other).unwrap();
-            if other_parent.map(|p| p.get() == entity).unwrap_or(false) {
-                continue;
-            } else if let (Some(my_parent), Some(other_parent)) = (m_parent, other_parent) {
-                if my_parent.get() == other_parent.get() {
+            if let Ok((_, other_transform, other_volume, other_parent)) = inertia_volumes.get(other)
+            {
+                if other_parent.map(|p| p.get() == entity).unwrap_or(false) {
                     continue;
+                } else if let (Some(my_parent), Some(other_parent)) = (m_parent, other_parent) {
+                    if my_parent.get() == other_parent.get() {
+                        continue;
+                    }
                 }
-            }
-            let other_position = other_transform.translation().truncate();
-            let diff = position - other_position;
-            if let Some(collision) = inertia_volume.find_collision(other_volume, diff, dt) {
-                println!("collision: {} {:?} {:?}", collision, entity, other);
-                collisions.send(Collision {
-                    e0: entity,
-                    e1: other,
-                    location: position + collision,
-                });
+                let other_position = other_transform.translation().truncate();
+                let diff = position - other_position;
+                if let Some(collision) = inertia_volume.find_collision(other_volume, diff, dt) {
+                    println!("collision: {} {:?} {:?}", collision, entity, other);
+                    collisions.send(Collision {
+                        e0: entity,
+                        e1: other,
+                        location: position + collision,
+                    });
+                }
             }
         }
     }
