@@ -17,6 +17,9 @@ pub struct InertiaVolume {
     pub radius: f32,
 }
 
+const COLLISION_CHECK_TICKS: usize = 10;
+const COLLISION_SPEED_BUFFER_DISTANCE: f32 = 300.0;
+
 impl InertiaVolume {
     pub fn new(mass: f32, radius: f32) -> Self {
         Self {
@@ -67,10 +70,68 @@ impl InertiaVolume {
     pub fn apply_rotation_force(&mut self, rotation: f32, dt: f32) {
         self.rotation += rotation * dt;
     }
+
+    pub fn find_collision(&self, other: &InertiaVolume, mut other_relative: Vec2) -> Option<usize> {
+        let mut distance_squared = other_relative.length_squared();
+        let radius_sum = self.radius + other.radius;
+        let buffered_distance = radius_sum + COLLISION_SPEED_BUFFER_DISTANCE;
+        if distance_squared > buffered_distance * buffered_distance {
+            return None;
+        }
+        let mut ticks_left = COLLISION_CHECK_TICKS;
+        let my_tick = self.velocity.normalize_or_zero();
+        let other_tick = other.velocity.normalize_or_zero();
+        while ticks_left > 0 && distance_squared > radius_sum * radius_sum {
+            other_relative -= my_tick;
+            other_relative += other_tick;
+            distance_squared = other_relative.length_squared();
+            ticks_left -= 1;
+        }
+        if distance_squared > radius_sum * radius_sum {
+            return None;
+        }
+        Some(COLLISION_CHECK_TICKS - ticks_left)
+    }
 }
 
-fn apply_velocity(mut inertia_volumes: Query<(&mut Transform, &InertiaVolume)>) {
+fn apply_velocity(time: Res<Time>, mut inertia_volumes: Query<(&mut Transform, &InertiaVolume)>) {
     for (mut transform, inertia_volume) in inertia_volumes.iter_mut() {
-        transform.translation += inertia_volume.velocity.extend(0.0);
+        transform.translation += inertia_volume.velocity.extend(0.0) * time.delta_seconds();
+    }
+}
+
+#[cfg(test)]
+mod physics_tests {
+    use super::*;
+
+    #[test]
+    fn find_collision_easy() {
+        let inertia_volume = InertiaVolume::new(1.0, 1.0);
+        let other = InertiaVolume::new(1.0, 1.0);
+        let diff = Vec2::new(1.0, 0.0);
+        let collision = inertia_volume.find_collision(&other, diff);
+        assert_eq!(collision, Some(0));
+    }
+
+    #[test]
+    fn find_collision_tangent() {
+        let mut going_right = InertiaVolume::new(1.0, 1.0);
+        going_right.velocity = Vec2::new(1.0, 0.0);
+        let mut going_down = InertiaVolume::new(1.0, 1.0);
+        going_down.velocity = Vec2::new(0.0, 1.0);
+        let diff = Vec2::new(5.0, -5.0);
+        let collision = going_right.find_collision(&going_down, diff);
+        assert_eq!(collision, Some(4));
+    }
+
+    #[test]
+    fn find_collision_miss() {
+        let mut going_right = InertiaVolume::new(1.0, 1.0);
+        going_right.velocity = Vec2::new(1.0, 0.0);
+        let mut going_down = InertiaVolume::new(1.0, 1.0);
+        going_down.velocity = Vec2::new(0.0, -1.0);
+        let diff = Vec2::new(5.0, -5.0);
+        let collision = going_right.find_collision(&going_down, diff);
+        assert_eq!(collision, None);
     }
 }

@@ -43,9 +43,9 @@ impl Player {
         Self {
             thrust: 0.0,
             side_braking: 0.0,
-            speed_limit: 3.0,
-            engine_strength: 5.0,
-            thrust_braking_strength: 2.0,
+            speed_limit: 360.0,
+            engine_strength: 600.0,
+            thrust_braking_strength: 240.0,
         }
     }
 }
@@ -133,6 +133,7 @@ fn player_movement_system(
 
 const JET_BLUENESS: f32 = 24.0;
 const JET_BRIGHTNESS: f32 = 10.0;
+const BRAKING_LIMIT: f32 = 10.0;
 
 fn toggle_jet(mut jet: CTmpMut<Skeleton, Slot>, on: bool) {
     if on {
@@ -147,10 +148,10 @@ fn player_jet_animation_system(mut players: Query<(&Player, &mut Spine)>) {
     for (player, mut spine) in players.iter_mut() {
         let Spine(SkeletonController { skeleton, .. }) = &mut *spine;
         if let Some(left_brake) = skeleton.find_slot_mut("left_maneuver") {
-            toggle_jet(left_brake, player.side_braking < -0.1);
+            toggle_jet(left_brake, player.side_braking < -BRAKING_LIMIT);
         }
         if let Some(right_brake) = skeleton.find_slot_mut("right_maneuver") {
-            toggle_jet(right_brake, player.side_braking > 0.1);
+            toggle_jet(right_brake, player.side_braking > BRAKING_LIMIT);
         }
         if let Some(left_jet) = skeleton.find_slot_mut("left_jet") {
             toggle_jet(left_jet, player.thrust > 0.1);
