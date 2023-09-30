@@ -20,4 +20,8 @@ impl Plugin for GameAssetsPlugin {
 pub struct GameAssets {
     #[asset(path = "sprites/player.png")]
     pub player: Handle<Image>,
+    #[asset(path = "sprites/cargo_ship.png")]
+    pub cargo_ship: Handle<Image>,
+    #[asset(path = "sprites/indicator.png")]
+    pub indicator: Handle<Image>,
 }
