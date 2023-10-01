@@ -16,7 +16,7 @@ impl SystemLocation {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct CurrentSystemRegion;
 
 #[derive(Component)]
@@ -235,6 +235,22 @@ pub fn engage_hyperdrive_system(
     }
 }
 
+pub fn maintain_current_system(
+    new_current_system: Query<Entity, Added<CurrentSystemRegion>>,
+    old_current_system: Query<Entity, With<CurrentSystemRegion>>,
+    mut commands: Commands,
+) {
+    for entity in new_current_system.iter() {
+        for old_current_system in old_current_system.iter() {
+            if entity != old_current_system {
+                commands
+                    .entity(old_current_system)
+                    .remove::<CurrentSystemRegion>();
+            }
+        }
+    }
+}
+
 pub fn initialize_local_region(
     mut timeout: Local<f32>,
     mut next_state: ResMut<NextState<GameState>>,
@@ -262,6 +278,7 @@ pub fn initialize_local_region(
         let player_location = system_locations.get(player_entity).unwrap().location;
         let target_location = system_locations.get(new_region).unwrap().location;
         system_locations.get_mut(player_entity).unwrap().location = target_location;
+        commands.entity(new_region).insert(CurrentSystemRegion);
         // Set their local position and velocity based on their travel direction.
         let incoming_direction = (target_location - player_location).normalize();
         player_transform.translation = (incoming_direction * ARENA_SIZE).extend(0.0);

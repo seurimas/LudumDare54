@@ -18,6 +18,7 @@ pub struct UiState {
     cargo_cells: Vec<Entity>,
     upgrade_text: Entity,
     pub home_text: Entity,
+    pub central_text: Entity,
 }
 
 impl Plugin for GameUiPlugin {
@@ -89,7 +90,7 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
                 grid_template_rows: RepeatedGridTrack::flex(CARGO_CELL_ROWS as u16, 1.),
                 grid_template_columns: RepeatedGridTrack::flex(CARGO_CELL_COLUMNS as u16, 1.),
                 left: Val::Px(0.),
-                top: Val::Px(70.),
+                top: Val::Px(90.),
                 height: Val::Px(CARGO_CELL_SIZE * CARGO_CELL_ROWS as f32),
                 width: Val::Px(CARGO_CELL_SIZE * CARGO_CELL_COLUMNS as f32),
                 ..Default::default()
@@ -105,11 +106,20 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
                         style: Style {
                             position_type: PositionType::Absolute,
                             left: Val::Px(0.),
-                            top: Val::Px(-20.),
-                            height: Val::Px(20.),
+                            top: Val::Px(-40.),
+                            height: Val::Px(40.),
+                            width: Val::Px(400.),
                             ..Default::default()
                         },
                         text: Text::from_sections(vec![
+                            TextSection {
+                                value: "Press [G] to deploy jammer.\n".to_string(),
+                                style: TextStyle {
+                                    font: DEFAULT_FONT_HANDLE.typed(),
+                                    font_size: 20.,
+                                    color: Color::WHITE,
+                                },
+                            },
                             TextSection {
                                 value: "Cargo: 0/0".to_string(),
                                 style: TextStyle {
@@ -127,7 +137,7 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
                                 },
                             },
                         ])
-                        .with_alignment(TextAlignment::Center),
+                        .with_alignment(TextAlignment::Left),
                         ..Default::default()
                     })
                     .id(),
@@ -170,7 +180,7 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
                     color: Color::WHITE,
                 },
             )
-            .with_alignment(TextAlignment::Center),
+            .with_alignment(TextAlignment::Left),
             ..Default::default()
         },))
         .id();
@@ -262,6 +272,45 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
                     .id(),
             )
         });
+    // End home text.
+    // Central text.
+    let mut central_text = None;
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                position_type: PositionType::Absolute,
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                justify_content: JustifyContent::FlexEnd,
+                align_items: AlignItems::Center,
+                width: Val::Percent(100.),
+                height: Val::Percent(100.),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .with_children(|builder| {
+            central_text = Some(
+                builder
+                    .spawn(TextBundle {
+                        style: Style {
+                            ..Default::default()
+                        },
+                        text: Text::from_sections(vec![TextSection {
+                            value: "Some text".to_string(),
+                            style: TextStyle {
+                                font: DEFAULT_FONT_HANDLE.typed(),
+                                font_size: 40.,
+                                color: Color::WHITE,
+                            },
+                        }])
+                        .with_alignment(TextAlignment::Center),
+                        ..Default::default()
+                    })
+                    .id(),
+            )
+        });
+    // End home text.
 
     // Save everything to the resource.
     commands.insert_resource(UiState {
@@ -272,16 +321,18 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
         cargo_cells,
         upgrade_text,
         home_text: home_text.unwrap(),
+        central_text: central_text.unwrap(),
     });
 }
 
 fn update_ui(
+    game_state: Res<State<GameState>>,
     ui_state: Res<UiState>,
     mut bg_color: Query<&mut BackgroundColor>,
     mut text: Query<&mut Text>,
-    player: Query<&Player>,
+    player: Query<(&Player, &InertiaVolume, Option<&Jammed>)>,
 ) {
-    let player = player.single();
+    let (player, player_inertia, m_player_jammed) = player.single();
     // Display health!
     if let Ok(mut shield_text) = text.get_mut(ui_state.shield_display) {
         let shield_percent = player.shields / player.max_shields * 100.;
@@ -326,12 +377,17 @@ fn update_ui(
         }
     }
     if let Ok(mut cargo_text) = text.get_mut(ui_state.cargo_text) {
-        cargo_text.sections[0].value = format!(
+        if player.exotic_material >= player.jammer_cost {
+            cargo_text.sections[0].value = "Press [G] to deploy jammer.\n".to_string();
+        } else {
+            cargo_text.sections[0].value = "Gather XM to create jammers.\n".to_string();
+        }
+        cargo_text.sections[1].value = format!(
             "Cargo: {}/{}",
             exotics + salvage + upgrades,
             CARGO_CELL_COUNT
         );
-        cargo_text.sections[1].value = format!(" Value: {}", player.salvage_value.floor() as i32);
+        cargo_text.sections[2].value = format!(" Value: ${}", player.salvage_value.floor() as i32);
     }
     if let Ok(mut upgrade_text) = text.get_mut(ui_state.upgrade_text) {
         upgrade_text.sections[0].value = "".to_string();
@@ -341,6 +397,17 @@ fn update_ui(
                 upgrade_text.sections[0].value,
                 upgrade.get_upgrade_material_name()
             );
+        }
+    }
+    if let Ok(mut central_text) = text.get_mut(ui_state.central_text) {
+        if *game_state == GameState::Home {
+            central_text.sections[0].value = "".to_string();
+        } else if m_player_jammed.is_some() {
+            central_text.sections[0].value = format!("Hyperdrive JAMMED! Leave jamming area!");
+        } else if player_inertia.forward_speed() < HYPERDRIVE_SPEED {
+            central_text.sections[0].value = format!("Increase speed to engage hyperdrive!");
+        } else {
+            central_text.sections[0].value = format!("Press [SPACE] to engage hyperdrive!");
         }
     }
 }

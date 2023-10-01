@@ -31,6 +31,8 @@ pub struct GameAssets {
     pub cargo_ship: Handle<Image>,
     #[asset(path = "sprites/indicator.png")]
     pub indicator: Handle<Image>,
+    #[asset(path = "sprites/local_indicator.png")]
+    pub local_indicator: Handle<Image>,
     #[asset(path = "sprites/exotic.png")]
     pub exotic: Handle<Image>,
     #[asset(path = "sprites/salvage.png")]
@@ -47,6 +49,15 @@ pub struct GameAssets {
     pub cargo_ship_atlas: Handle<Atlas>,
     #[asset(path = "spines/cargo_ship.json")]
     pub cargo_ship_json: Handle<SkeletonJson>,
+    // Music!
+    #[asset(path = "music/title_theme.ogg")]
+    pub title_theme: Handle<AudioSource>,
+    #[asset(path = "music/engagement.ogg")]
+    pub engagement: Handle<AudioSource>,
+    #[asset(path = "music/home_theme.ogg")]
+    pub home_theme: Handle<AudioSource>,
+    #[asset(path = "music/space_theme.ogg")]
+    pub space_theme: Handle<AudioSource>,
     // Sounds!
     #[asset(path = "sounds/cargo_ship_section_hit.ogg")]
     pub cargo_ship_section_hit: Handle<AudioSource>,

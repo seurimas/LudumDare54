@@ -10,7 +10,7 @@ enum CargoShipEscape {
 
 #[derive(Component)]
 pub struct CargoShip {
-    aggressed: bool,
+    pub aggressed: bool,
     sections_health: [f32; 8],
     pub sections_destroyed: [bool; 8],
     fire_speed: f32,
@@ -19,7 +19,7 @@ pub struct CargoShip {
     jump_time: f32,
 }
 
-const CARGO_SHIP_SECTION_HEALTH: f32 = 200.0;
+const CARGO_SHIP_SECTION_HEALTH: f32 = 75.0;
 
 impl CargoShip {
     pub fn new() -> Self {

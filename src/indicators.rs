@@ -85,11 +85,23 @@ pub fn create_indicator_with_text(
 ) -> (Entity, Entity) {
     let indicator = commands
         .spawn(ImageBundle {
-            image: UiImage::new(game_assets.indicator.clone()),
+            image: UiImage::new(if regional {
+                game_assets.local_indicator.clone()
+            } else {
+                game_assets.indicator.clone()
+            }),
             style: Style {
                 position_type: PositionType::Absolute,
-                width: Val::Px(16.0),
-                height: Val::Px(32.0),
+                width: if regional {
+                    Val::Px(8.0)
+                } else {
+                    Val::Px(16.0)
+                },
+                height: if regional {
+                    Val::Px(16.0)
+                } else {
+                    Val::Px(32.0)
+                },
                 ..Default::default()
             },
             ..Default::default()
