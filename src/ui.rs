@@ -1,6 +1,6 @@
 use bevy::text::DEFAULT_FONT_HANDLE;
 
-use crate::prelude::*;
+use crate::{home::Career, prelude::*};
 
 const CARGO_CELL_COUNT: usize = 100;
 const CARGO_CELL_COLUMNS: usize = 20;
@@ -19,6 +19,8 @@ pub struct UiState {
     upgrade_text: Entity,
     pub home_text: Entity,
     pub central_text: Entity,
+    pub game_over_text: Entity,
+    pub retire_text: Entity,
 }
 
 impl Plugin for GameUiPlugin {
@@ -29,6 +31,51 @@ impl Plugin for GameUiPlugin {
                 update_ui.run_if(not(in_state(GameState::Loading))),
             );
     }
+}
+
+fn spawn_centered_text(
+    commands: &mut Commands,
+    sections: Vec<String>,
+    font_size: f32,
+    color: Color,
+) -> Entity {
+    let mut text_entity = None;
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                position_type: PositionType::Absolute,
+                display: Display::Flex,
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                width: Val::Percent(100.),
+                height: Val::Percent(100.),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .with_children(|builder| {
+            text_entity = Some(
+                builder
+                    .spawn(TextBundle {
+                        background_color: Color::rgba(0.0, 0.0, 0.0, 0.5).into(),
+                        style: Style {
+                            ..Default::default()
+                        },
+                        text: Text::from_sections(sections.iter().map(|text| TextSection {
+                            value: text.to_string(),
+                            style: TextStyle {
+                                font: DEFAULT_FONT_HANDLE.typed(),
+                                font_size,
+                                color,
+                            },
+                        }))
+                        .with_alignment(TextAlignment::Center),
+                        ..Default::default()
+                    })
+                    .id(),
+            )
+        });
+    text_entity.unwrap()
 }
 
 fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
@@ -273,6 +320,22 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
             )
         });
     // End home text.
+    let game_over_text = spawn_centered_text(
+        &mut commands,
+        vec!["GAME OVER".to_string(), "".to_string(), "".to_string()],
+        40.,
+        Color::RED,
+    );
+    let retire_text = spawn_centered_text(
+        &mut commands,
+        vec![
+            "Happy retirement!\n\n".to_string(),
+            "".to_string(),
+            "".to_string(),
+        ],
+        40.,
+        Color::YELLOW_GREEN,
+    );
     // Central text.
     let mut central_text = None;
     commands
@@ -322,13 +385,17 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
         upgrade_text,
         home_text: home_text.unwrap(),
         central_text: central_text.unwrap(),
+        game_over_text,
+        retire_text,
     });
 }
 
 fn update_ui(
     game_state: Res<State<GameState>>,
     ui_state: Res<UiState>,
+    career: Res<Career>,
     mut bg_color: Query<&mut BackgroundColor>,
+    mut visibility: Query<&mut Visibility>,
     mut text: Query<&mut Text>,
     player: Query<(&Player, &InertiaVolume, Option<&Jammed>)>,
 ) {
@@ -400,14 +467,33 @@ fn update_ui(
         }
     }
     if let Ok(mut central_text) = text.get_mut(ui_state.central_text) {
-        if *game_state == GameState::Home {
+        if *game_state == GameState::Home
+            || *game_state == GameState::Retire
+            || *game_state == GameState::GameOver
+        {
             central_text.sections[0].value = "".to_string();
+        } else if !career.intro_complete {
+            // Let the intro system handle it.
         } else if m_player_jammed.is_some() {
             central_text.sections[0].value = format!("Hyperdrive JAMMED! Leave jamming area!");
         } else if player_inertia.forward_speed() < HYPERDRIVE_SPEED {
             central_text.sections[0].value = format!("Increase speed to engage hyperdrive!");
         } else {
             central_text.sections[0].value = format!("Press [SPACE] to engage hyperdrive!");
+        }
+    }
+    if let Ok(mut visible) = visibility.get_mut(ui_state.game_over_text) {
+        if *game_state == GameState::GameOver {
+            *visible = Visibility::Visible;
+        } else {
+            *visible = Visibility::Hidden;
+        }
+    }
+    if let Ok(mut visible) = visibility.get_mut(ui_state.retire_text) {
+        if *game_state == GameState::Retire {
+            *visible = Visibility::Visible;
+        } else {
+            *visible = Visibility::Hidden;
         }
     }
 }

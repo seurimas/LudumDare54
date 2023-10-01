@@ -156,6 +156,10 @@ impl Player {
         }
     }
 
+    pub fn is_dead(&self) -> bool {
+        self.hull <= 0.0
+    }
+
     pub fn cargo_space_left(&self) -> f32 {
         (self.max_cargo - self.salvage_mass - self.exotic_material - self.upgrade_mass).max(0.)
     }

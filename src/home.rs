@@ -16,12 +16,25 @@ impl Plugin for HomePlugin {
     }
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct Career {
     pub earnings: f32,
     pub last_repair_costs: f32,
     pub last_upgrades: Vec<Upgrade>,
     pub days_survived: u32,
+    pub intro_complete: bool,
+}
+
+impl Default for Career {
+    fn default() -> Self {
+        Self {
+            earnings: 0.0,
+            last_repair_costs: 0.0,
+            last_upgrades: Vec::new(),
+            days_survived: 0,
+            intro_complete: false,
+        }
+    }
 }
 
 #[derive(Component)]

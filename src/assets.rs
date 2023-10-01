@@ -58,6 +58,10 @@ pub struct GameAssets {
     pub home_theme: Handle<AudioSource>,
     #[asset(path = "music/space_theme.ogg")]
     pub space_theme: Handle<AudioSource>,
+    #[asset(path = "music/game_over.ogg")]
+    pub game_over: Handle<AudioSource>,
+    #[asset(path = "music/retire.ogg")]
+    pub retire: Handle<AudioSource>,
     // Sounds!
     #[asset(path = "sounds/cargo_ship_section_hit.ogg")]
     pub cargo_ship_section_hit: Handle<AudioSource>,

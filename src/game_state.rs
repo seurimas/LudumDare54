@@ -6,6 +6,8 @@ pub enum GameState {
     Playing,
     Hyperdrive,
     Home,
+    GameOver,
+    Retire,
 }
 
 impl Default for GameState {

@@ -1,8 +1,10 @@
 mod assets;
 mod bullets;
+mod game_over;
 mod game_state;
 mod home;
 mod indicators;
+mod intro;
 mod jamming;
 mod physics;
 mod pickups;
@@ -18,8 +20,10 @@ extern crate lazy_static;
 use assets::GameAssetsPlugin;
 use bevy_spine::SpinePlugin;
 use bullets::BulletsPlugin;
+use game_over::GameOverPlugin;
 use home::HomePlugin;
 use indicators::IndicatorsPlugin;
+use intro::IntroPlugin;
 use jamming::JammingPlugin;
 use physics::PhysicsPlugin;
 use pickups::PickupsPlugin;
@@ -37,6 +41,8 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins((
             SpinePlugin,
+            GameOverPlugin,
+            IntroPlugin,
             JammingPlugin,
             BulletsPlugin,
             TradeRoutesPlugin,
