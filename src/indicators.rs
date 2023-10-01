@@ -1,6 +1,6 @@
 use bevy::ui::widget::UiImageSize;
 
-use crate::prelude::*;
+use crate::{game_state, prelude::*};
 
 const INDICATOR_DISTANCE: f32 = 300.0;
 const INDICATOR_TEXT_OFFSET: f32 = 20.0;
@@ -11,7 +11,7 @@ impl Plugin for IndicatorsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (display_indicator_system.run_if(in_state(GameState::Playing)),),
+            (display_indicator_system.run_if(not(in_state(GameState::Loading))),),
         );
     }
 }
@@ -115,6 +115,7 @@ pub fn create_indicator_with_text(
 
 fn display_indicator_system(
     windows: Query<&Window>,
+    game_state: Res<State<GameState>>,
     mut queries: ParamSet<(
         Query<&Transform, With<Camera2d>>,
         Query<(&DistantIndicator, &Transform)>,
@@ -160,7 +161,7 @@ fn display_indicator_system(
     for (visible, indicator, indicator_text, direction) in indicator_directions {
         let direction = direction.normalize();
         let angle = (-direction.y).atan2(direction.x);
-        let visible = if visible {
+        let visible = if *game_state == GameState::Playing && visible {
             Visibility::Visible
         } else {
             Visibility::Hidden

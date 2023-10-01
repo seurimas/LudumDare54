@@ -32,6 +32,7 @@ impl Plugin for PlayerPlugin {
                 player_movement_system.run_if(in_state(GameState::Playing)),
                 player_laser_aim_system.run_if(in_state(GameState::Playing)),
                 player_laser_fire_system.run_if(in_state(GameState::Playing)),
+                player_shield_recharge_system,
                 player_jet_animation_system,
             ),
         );
@@ -68,6 +69,10 @@ pub struct Player {
     pub salvage_mass: f32,
     pub salvage_value: f32,
     pub exotic_material: f32,
+    pub upgrade_material: Option<Upgrade>,
+    // Upgrades
+    pub jammer_range_multiplier: f32,
+    pub jammer_cost: f32,
 }
 
 impl Player {
@@ -93,10 +98,47 @@ impl Player {
             salvage_mass: 0.0,
             salvage_value: 0.0,
             exotic_material: 0.0,
+            upgrade_material: None,
+            jammer_range_multiplier: 1.0,
+            jammer_cost: 20.0,
+        }
+    }
+
+    pub fn apply_upgrade(&mut self, upgrade: Upgrade) {
+        match upgrade {
+            Upgrade::EngineUpgrade => {
+                self.speed_limit *= 1.1;
+                self.engine_strength *= 1.1;
+                self.thrust_braking_strength *= 1.1;
+            }
+            Upgrade::ShieldStrength => {
+                self.max_shields *= 1.1;
+            }
+            Upgrade::HullStrength => {
+                self.max_hull *= 1.1;
+            }
+            Upgrade::ShieldRecharge => {
+                self.shield_recharge_delay *= 0.9;
+                self.shield_recharge_rate *= 1.1;
+            }
+            Upgrade::FireSpeed => {
+                self.main_speed *= 0.9;
+            }
+            Upgrade::JammerRange => {
+                self.jammer_range_multiplier *= 1.1;
+            }
+            Upgrade::JammerEfficiency => {
+                if self.jammer_cost <= 1.0 {
+                    self.jammer_cost *= 0.9;
+                } else {
+                    self.jammer_cost -= 1.0;
+                }
+            }
         }
     }
 
     pub fn take_damage(&mut self, amount: f32) {
+        self.shield_recharge_timer = self.shield_recharge_delay;
         if self.shields > 0.0 {
             self.shields -= amount;
         } else {
@@ -106,6 +148,18 @@ impl Player {
 
     pub fn cargo_space_left(&self) -> f32 {
         (self.max_cargo - self.salvage_mass - self.exotic_material).max(0.)
+    }
+
+    pub fn get_repair_cost(&self) -> f32 {
+        self.max_hull - self.hull
+    }
+
+    pub fn repair(&mut self, amount: f32) {
+        self.shields = self.max_shields;
+        self.hull += amount;
+        if self.hull > self.max_hull {
+            self.hull = self.max_hull;
+        }
     }
 }
 
@@ -352,6 +406,19 @@ fn player_jet_animation_system(mut players: Query<(&Player, &mut Spine)>) {
         }
         if let Some(right_reverse_jet) = skeleton.find_slot_mut("right_reverse_jet") {
             toggle_jet(right_reverse_jet, player.thrust < -JET_ACTIVATION_LIMIT);
+        }
+    }
+}
+
+fn player_shield_recharge_system(time: Res<Time>, mut players: Query<(&mut Player)>) {
+    for mut player in players.iter_mut() {
+        if player.shield_recharge_timer > 0.0 {
+            player.shield_recharge_timer -= time.delta_seconds();
+        } else {
+            player.shields += player.shield_recharge_rate * time.delta_seconds();
+            if player.shields > player.max_shields {
+                player.shields = player.max_shields;
+            }
         }
     }
 }

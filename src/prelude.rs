@@ -4,7 +4,7 @@ pub use crate::game_state::GameState;
 pub use crate::indicators::{create_indicator_with_text, DistantIndicator};
 pub use crate::jamming::{Jammable, Jammed, Jammer};
 pub use crate::physics::{Collision, InertiaVolume};
-pub use crate::pickups::{spawn_exotic, spawn_salvage, Pickup};
+pub use crate::pickups::{spawn_exotic, spawn_salvage, Pickup, Upgrade};
 pub use crate::player::Player;
 pub use crate::space_pixels::SpacePixel;
 pub use crate::trade_routes::{

@@ -46,7 +46,10 @@ pub fn insert_jammed_around_jammer_system(
         if queries.p1().iter().any(|(transform, jammer)| {
             transform.translation.distance(*jammed_location) < jammer.radius
         }) {
-            commands.entity(*jammed_entity).insert(Jammed);
+            commands.add(InsertSafe {
+                entity: *jammed_entity,
+                bundle: Jammed,
+            });
         } else {
             commands.entity(*jammed_entity).remove::<Jammed>();
         }

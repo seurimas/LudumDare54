@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 use crate::prelude::*;
 
 pub struct PickupsPlugin;
@@ -8,10 +10,54 @@ impl Plugin for PickupsPlugin {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+pub enum Upgrade {
+    EngineUpgrade,
+    ShieldRecharge,
+    ShieldStrength,
+    HullStrength,
+    FireSpeed,
+    // FirePower,
+    JammerRange,
+    JammerEfficiency,
+}
+
+impl Display for Upgrade {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Upgrade::EngineUpgrade => write!(f, "Engine Upgrade"),
+            Upgrade::ShieldRecharge => write!(f, "Shield Recharge"),
+            Upgrade::ShieldStrength => write!(f, "Shield Strength"),
+            Upgrade::HullStrength => write!(f, "Hull Strength"),
+            Upgrade::FireSpeed => write!(f, "Fire Speed"),
+            // Upgrade::FirePower => write!(f, "Fire Power"),
+            Upgrade::JammerRange => write!(f, "Jammer Range"),
+            Upgrade::JammerEfficiency => write!(f, "Jammer Efficiency"),
+        }
+    }
+}
+
+impl Upgrade {
+    pub fn get_upgrade_material_name(&self) -> String {
+        match self {
+            Upgrade::EngineUpgrade => "XM Engine Coils",
+            Upgrade::ShieldRecharge => "XM Shield Generators",
+            Upgrade::ShieldStrength => "XM Shield Capacitors",
+            Upgrade::HullStrength => "XM Plates",
+            Upgrade::FireSpeed => "XM Plasma Injectors",
+            // Upgrade::FirePower => "Fire Power Material",
+            Upgrade::JammerRange => "XM Attenuators",
+            Upgrade::JammerEfficiency => "XM Amplifiers",
+        }
+        .to_string()
+    }
+}
+
 #[derive(Component)]
 pub enum Pickup {
     ExoticMaterial(f32),
     Salvage { mass: f32, value: f32 },
+    Upgrade(Upgrade),
 }
 
 pub fn spawn_exotic(
@@ -80,6 +126,9 @@ fn player_pickup_system(
             if let Ok(pickup) = pickups.get(collision.e1) {
                 match pickup {
                     Pickup::ExoticMaterial(amount) => {
+                        if *amount > player.cargo_space_left() {
+                            continue;
+                        }
                         player.exotic_material += amount.min(player.cargo_space_left());
                     }
                     Pickup::Salvage { mass, value } => {
@@ -88,6 +137,12 @@ fn player_pickup_system(
                         }
                         player.salvage_mass += mass;
                         player.salvage_value += value;
+                    }
+                    Pickup::Upgrade(upgrade) => {
+                        if player.upgrade_material.is_some() {
+                            continue;
+                        }
+                        player.upgrade_material = Some(*upgrade);
                     }
                 }
                 if let Some(mut pickup_entity) = commands.get_entity(collision.e1) {

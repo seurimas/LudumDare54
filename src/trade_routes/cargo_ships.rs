@@ -223,7 +223,6 @@ pub fn cargo_ship_escape_system(
                 CargoShipEscape::Jumping { progress: 0.0 }
             };
         }
-        println!("{:?}", cargo_ship.escape_state);
         match cargo_ship.escape_state {
             CargoShipEscape::Jumping { progress } => {
                 if m_jammed.is_some() {

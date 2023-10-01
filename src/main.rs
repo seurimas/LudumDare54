@@ -18,6 +18,7 @@ extern crate lazy_static;
 use assets::GameAssetsPlugin;
 use bevy_spine::SpinePlugin;
 use bullets::BulletsPlugin;
+use home::HomePlugin;
 use indicators::IndicatorsPlugin;
 use jamming::JammingPlugin;
 use physics::PhysicsPlugin;
@@ -46,6 +47,7 @@ fn main() {
             PlayerPlugin,
             GameUiPlugin,
             SpacePixelsPlugin,
+            HomePlugin,
         ))
         .run();
 }

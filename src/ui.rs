@@ -10,12 +10,14 @@ const CARGO_CELL_SIZE: f32 = 16.;
 pub struct GameUiPlugin;
 
 #[derive(Resource)]
-struct UiState {
+pub struct UiState {
     shield_display: Entity,
     hull_display: Entity,
     cargo_display: Entity,
     cargo_text: Entity,
     cargo_cells: Vec<Entity>,
+    upgrade_text: Entity,
+    pub home_text: Entity,
 }
 
 impl Plugin for GameUiPlugin {
@@ -36,8 +38,8 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
                 position_type: PositionType::Absolute,
                 left: Val::Px(0.),
                 top: Val::Px(0.),
-                width: Val::Px(200.),
-                height: Val::Px(20.),
+                width: Val::Px(230.),
+                height: Val::Px(30.),
                 ..Default::default()
             },
             background_color: Color::rgba(0., 0., 1., 1.0).into(),
@@ -45,7 +47,7 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
                 "Shields: 100%",
                 TextStyle {
                     font: DEFAULT_FONT_HANDLE.typed(),
-                    font_size: 20.,
+                    font_size: 30.,
                     color: Color::WHITE,
                 },
             )
@@ -58,8 +60,8 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
             style: Style {
                 position_type: PositionType::Absolute,
                 left: Val::Px(0.),
-                top: Val::Px(20.),
-                width: Val::Px(200.),
+                top: Val::Px(30.),
+                width: Val::Px(230.),
                 height: Val::Px(20.),
                 ..Default::default()
             },
@@ -82,11 +84,12 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
     let cargo_display = commands
         .spawn((NodeBundle {
             style: Style {
+                position_type: PositionType::Absolute,
                 display: Display::Grid,
                 grid_template_rows: RepeatedGridTrack::flex(CARGO_CELL_ROWS as u16, 1.),
                 grid_template_columns: RepeatedGridTrack::flex(CARGO_CELL_COLUMNS as u16, 1.),
                 left: Val::Px(0.),
-                top: Val::Px(60.),
+                top: Val::Px(70.),
                 height: Val::Px(CARGO_CELL_SIZE * CARGO_CELL_ROWS as f32),
                 width: Val::Px(CARGO_CELL_SIZE * CARGO_CELL_COLUMNS as f32),
                 ..Default::default()
@@ -149,6 +152,124 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
             }
         })
         .id();
+    let upgrade_text = commands
+        .spawn((TextBundle {
+            style: Style {
+                position_type: PositionType::Absolute,
+                left: Val::Px(0.),
+                top: Val::Px(170.),
+                width: Val::Px(230.),
+                height: Val::Px(20.),
+                ..Default::default()
+            },
+            text: Text::from_section(
+                "Upgrade found:",
+                TextStyle {
+                    font: DEFAULT_FONT_HANDLE.typed(),
+                    font_size: 20.,
+                    color: Color::WHITE,
+                },
+            )
+            .with_alignment(TextAlignment::Center),
+            ..Default::default()
+        },))
+        .id();
+    // End cargo.
+    // Home text.
+    let mut home_text = None;
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                position_type: PositionType::Absolute,
+                display: Display::Flex,
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                width: Val::Percent(100.),
+                height: Val::Percent(100.),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .with_children(|builder| {
+            home_text = Some(
+                builder
+                    .spawn(TextBundle {
+                        background_color: Color::rgba(0.0, 0.0, 0.0, 0.5).into(),
+                        style: Style {
+                            ..Default::default()
+                        },
+                        text: Text::from_sections(vec![
+                            TextSection {
+                                value: "Earnings: ".to_string(),
+                                style: TextStyle {
+                                    font: DEFAULT_FONT_HANDLE.typed(),
+                                    font_size: 20.,
+                                    color: Color::WHITE,
+                                },
+                            },
+                            TextSection {
+                                value: "XXX".to_string(),
+                                style: TextStyle {
+                                    font: DEFAULT_FONT_HANDLE.typed(),
+                                    font_size: 20.,
+                                    color: Color::WHITE,
+                                },
+                            },
+                            TextSection {
+                                value: "\nRepair costs: ".to_string(),
+                                style: TextStyle {
+                                    font: DEFAULT_FONT_HANDLE.typed(),
+                                    font_size: 20.,
+                                    color: Color::WHITE,
+                                },
+                            },
+                            TextSection {
+                                value: "XXX".to_string(),
+                                style: TextStyle {
+                                    font: DEFAULT_FONT_HANDLE.typed(),
+                                    font_size: 20.,
+                                    color: Color::WHITE,
+                                },
+                            },
+                            TextSection {
+                                value: "\nUpgrade discovered: ".to_string(),
+                                style: TextStyle {
+                                    font: DEFAULT_FONT_HANDLE.typed(),
+                                    font_size: 20.,
+                                    color: Color::WHITE,
+                                },
+                            },
+                            TextSection {
+                                value: "XXX".to_string(),
+                                style: TextStyle {
+                                    font: DEFAULT_FONT_HANDLE.typed(),
+                                    font_size: 20.,
+                                    color: Color::WHITE,
+                                },
+                            },
+                            TextSection {
+                                value: "\n10 days left".to_string(),
+                                style: TextStyle {
+                                    font: DEFAULT_FONT_HANDLE.typed(),
+                                    font_size: 20.,
+                                    color: Color::WHITE,
+                                },
+                            },
+                            TextSection {
+                                value: "\nPress <Space> to continue".to_string(),
+                                style: TextStyle {
+                                    font: DEFAULT_FONT_HANDLE.typed(),
+                                    font_size: 20.,
+                                    color: Color::WHITE,
+                                },
+                            },
+                        ])
+                        .with_alignment(TextAlignment::Center),
+                        ..Default::default()
+                    })
+                    .id(),
+            )
+        });
 
     // Save everything to the resource.
     commands.insert_resource(UiState {
@@ -157,11 +278,13 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
         cargo_display,
         cargo_text: cargo_text.unwrap(),
         cargo_cells,
+        upgrade_text,
+        home_text: home_text.unwrap(),
     });
 }
 
 fn update_ui(
-    mut ui_state: ResMut<UiState>,
+    ui_state: Res<UiState>,
     mut bg_color: Query<&mut BackgroundColor>,
     mut text: Query<&mut Text>,
     player: Query<&Player>,
@@ -169,13 +292,18 @@ fn update_ui(
     let player = player.single();
     // Display health!
     if let Ok(mut shield_text) = text.get_mut(ui_state.shield_display) {
-        shield_text.sections[0].value = format!(
-            "Shields: {:.0}%",
-            player.shields / player.max_shields * 100.
-        );
+        let shield_percent = player.shields / player.max_shields * 100.;
+        shield_text.sections[0].value = format!("Shields: {}", player.shields.floor() as i32);
+        if let Ok(mut bg_color) = bg_color.get_mut(ui_state.shield_display) {
+            bg_color.0 = Color::rgba(0.0, 1.0 - shield_percent / 100., shield_percent / 100., 1.0);
+        }
     }
     if let Ok(mut hull_text) = text.get_mut(ui_state.hull_display) {
-        hull_text.sections[0].value = format!("Hull: {:.0}%", player.hull / player.max_hull * 100.);
+        let hull_percent = player.hull / player.max_hull * 100.;
+        hull_text.sections[0].value = format!("Hull: {}", player.hull.floor() as i32);
+        if let Ok(mut bg_color) = bg_color.get_mut(ui_state.hull_display) {
+            bg_color.0 = Color::rgba(hull_percent / 100., 1.0 - hull_percent / 100., 0.0, 1.0);
+        }
     }
     // End health.
 
@@ -201,6 +329,14 @@ fn update_ui(
     }
     if let Ok(mut cargo_text) = text.get_mut(ui_state.cargo_text) {
         cargo_text.sections[0].value = format!("Cargo: {}/{}", exotics + salvage, CARGO_CELL_COUNT);
-        cargo_text.sections[1].value = format!("Value: {}", player.salvage_value.floor() as i32);
+        cargo_text.sections[1].value = format!(" Value: {}", player.salvage_value.floor() as i32);
+    }
+    if let Ok(mut upgrade_text) = text.get_mut(ui_state.upgrade_text) {
+        if let Some(upgrade) = &player.upgrade_material {
+            upgrade_text.sections[0].value =
+                format!("Upgrade found: {}", upgrade.get_upgrade_material_name());
+        } else {
+            upgrade_text.sections[0].value = "".to_string();
+        }
     }
 }
