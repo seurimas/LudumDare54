@@ -1,9 +1,9 @@
 use crate::{
-    home::{spawn_home_in_system, HomeInSystem},
+    home::{spawn_home_in_system, Career, HomeInSystem},
     prelude::*,
 };
 
-use super::{spawn_cargo_ship, Jammer};
+use super::{spawn_cargo_ships, Jammer};
 
 #[derive(Component)]
 pub struct SystemLocation {
@@ -23,7 +23,7 @@ pub struct CurrentSystemRegion;
 pub struct Regional;
 
 #[derive(Component)]
-pub struct CargoShipsInSystem(usize);
+pub struct CargoShipsInSystem;
 
 #[derive(Component)]
 pub struct AsteroidsInSystem(usize);
@@ -48,7 +48,6 @@ pub fn spawn_starting_system(mut commands: Commands, game_assets: Res<GameAssets
             ),
             &game_assets,
             &mut commands,
-            1,
         );
     }
     spawn_home_in_system(
@@ -69,7 +68,7 @@ pub fn spawn_asteroid_field(mut commands: Commands, game_assets: Res<GameAssets>
             &mut commands,
             game_assets.exotic.clone(),
             rand::thread_rng().gen_range(5.0..15.0),
-        )
+        );
     }
 }
 
@@ -92,13 +91,12 @@ fn spawn_cargo_ships_in_system(
     location: Vec2,
     game_assets: &Res<GameAssets>,
     mut commands: &mut Commands,
-    size: usize,
 ) {
     let (indicator, indicator_text) = create_indicator_with_text(commands, game_assets, false);
     commands.spawn((
         TransformBundle::default(),
         SystemLocation { location },
-        CargoShipsInSystem(size),
+        CargoShipsInSystem,
         DistantIndicator::new_system(indicator, indicator_text, Vec2::ZERO),
     ));
 }
@@ -202,6 +200,7 @@ pub fn update_system_indicators(
 
 pub fn engage_hyperdrive_system(
     mut cooldown: Local<f32>,
+    career: Res<Career>,
     time: Res<Time>,
     mut commands: Commands,
     mut next_state: ResMut<NextState<GameState>>,
@@ -212,8 +211,14 @@ pub fn engage_hyperdrive_system(
     *cooldown -= time.delta_seconds();
     if input.just_pressed(KeyCode::Space) && *cooldown <= 0.0 {
         let (player, mut player_inertia, m_jammed) = player.single_mut();
+        if !career.intro_complete() {
+            return;
+        }
         if player_inertia.forward_speed() < HYPERDRIVE_SPEED {
-            // TODO: Indicate failure.
+            commands.spawn(AudioBundle {
+                source: game_assets.fail.clone(),
+                settings: PlaybackSettings::DESPAWN,
+            });
             return;
         }
         if m_jammed.is_some() {
@@ -293,8 +298,19 @@ pub fn initialize_local_region(
                 spawn_asteroid_field(commands, game_assets, asteroids.0);
                 next_state.set(GameState::Playing);
             }
-            (_, Some(cargo_ships), _) => {
-                spawn_cargo_ship(commands, game_assets, skeletons);
+            (_, Some(_cargo_ships), _) => {
+                spawn_cargo_ships(
+                    commands,
+                    game_assets,
+                    skeletons,
+                    if rand::thread_rng().gen_bool(0.25) {
+                        2
+                    } else if rand::thread_rng().gen_bool(0.33) {
+                        3
+                    } else {
+                        1
+                    },
+                );
                 next_state.set(GameState::Playing);
             }
             (_, _, Some(_)) => {

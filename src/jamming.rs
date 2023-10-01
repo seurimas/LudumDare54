@@ -143,8 +143,16 @@ pub fn deploy_jammer_system(
     if input.just_pressed(KeyCode::G) && *cooldown <= 0.0 {
         let (mut player, player_transform, mut player_inertia) = player.single_mut();
         if player.exotic_material < player.jammer_cost {
+            commands.spawn(AudioBundle {
+                source: game_assets.fail.clone(),
+                settings: PlaybackSettings::DESPAWN,
+            });
             return;
         }
+        commands.spawn(AudioBundle {
+            source: game_assets.deploy_jammer.clone(),
+            settings: PlaybackSettings::DESPAWN,
+        });
         player.exotic_material -= player.jammer_cost;
         let mut transform = Transform::default();
         transform.translation = player_transform.translation;

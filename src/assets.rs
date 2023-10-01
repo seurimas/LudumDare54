@@ -89,6 +89,10 @@ pub struct GameAssets {
     pub player_jammed: Handle<AudioSource>,
     #[asset(path = "sounds/upgrade.ogg")]
     pub upgrade: Handle<AudioSource>,
+    #[asset(path = "sounds/fail.ogg")]
+    pub fail: Handle<AudioSource>,
+    #[asset(path = "sounds/deploy_jammer.ogg")]
+    pub deploy_jammer: Handle<AudioSource>,
 }
 
 #[derive(Resource)]
@@ -107,6 +111,9 @@ pub struct Lasers {
     // Jammer pixels (not lasers, oh well)!
     pub jammer_mesh: Handle<Mesh>,
     pub jammer_material: Handle<ColorMaterial>,
+    // Star pixels (not lasers, oh well)!
+    pub star_mesh: Handle<Mesh>,
+    pub star_material: Handle<ColorMaterial>,
 }
 
 fn create_skeletons(
@@ -148,6 +155,9 @@ fn create_lasers(
     let jammer_mesh = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(2., 2.))));
     let jammer_material = materials.add(ColorMaterial::from(Color::rgba(3.0, 3.0, 0.0, 1.0)));
 
+    let star_mesh = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(1., 1.))));
+    let star_material = materials.add(ColorMaterial::from(Color::rgba(3.0, 3.0, 3.0, 1.0)));
+
     commands.insert_resource(Lasers {
         player_laser_mesh,
         player_laser_material,
@@ -155,5 +165,7 @@ fn create_lasers(
         cargo_ship_laser_material,
         jammer_mesh,
         jammer_material,
+        star_mesh,
+        star_material,
     });
 }

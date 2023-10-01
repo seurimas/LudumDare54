@@ -19,7 +19,7 @@ impl Plugin for PhysicsPlugin {
     }
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Clone)]
 pub struct InertiaVolume {
     pub velocity: Vec2,
     rotation: f32,

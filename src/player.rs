@@ -2,6 +2,7 @@ use std::f32::consts::PI;
 
 use bevy::{
     core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping},
+    sprite::MaterialMesh2dBundle,
     transform::TransformSystem,
 };
 
@@ -34,6 +35,7 @@ impl Plugin for PlayerPlugin {
                 player_laser_fire_system.run_if(in_state(GameState::Playing)),
                 player_shield_recharge_system,
                 player_jet_animation_system,
+                player_star_pixel_system.run_if(not(in_state(GameState::Loading))),
             ),
         );
     }
@@ -439,6 +441,41 @@ fn player_shield_recharge_system(time: Res<Time>, mut players: Query<(&mut Playe
             if player.shields > player.max_shields {
                 player.shields = player.max_shields;
             }
+        }
+    }
+}
+
+const VISUAL_DISTANCE: f32 = 1000.0;
+const PLAYER_STAR_PER_SPEED: f32 = 200. / 500.;
+
+pub fn player_star_pixel_system(
+    progress: Local<f32>,
+    time: Res<Time>,
+    mut commands: Commands,
+    mut players: Query<(&Player, &Transform, &InertiaVolume)>,
+    lasers: Res<Lasers>,
+) {
+    let mut rng = rand::thread_rng();
+    let dt = time.delta_seconds();
+    for (player, transform, inertia) in players.iter_mut() {
+        let center = transform.translation;
+        let R_sq = inertia.velocity.length();
+        let new_pixels = (dt * R_sq * PLAYER_STAR_PER_SPEED).floor() as i32;
+        for _ in 0..(new_pixels.min(20)) {
+            let r_sq: f32 = rng.gen_range(0.0..1.0);
+            let r = VISUAL_DISTANCE * r_sq.sqrt();
+            let theta = rng.gen_range(0.0..2.0 * PI);
+            let mut transform = Transform::default();
+            transform.translation = center + Vec3::new(r * theta.cos(), r * theta.sin(), 0.0);
+            commands.spawn((
+                MaterialMesh2dBundle {
+                    transform,
+                    mesh: lasers.star_mesh.clone().into(),
+                    material: lasers.star_material.clone(),
+                    ..Default::default()
+                },
+                SpacePixel::random_jammer(),
+            ));
         }
     }
 }

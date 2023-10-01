@@ -1,5 +1,7 @@
 use std::fmt::{Display, Formatter};
 
+use bevy::ecs::system::EntityCommands;
+
 use crate::prelude::*;
 
 pub struct PickupsPlugin;
@@ -90,13 +92,13 @@ pub enum Pickup {
     Upgrade { mass: f32, upgrade: Upgrade },
 }
 
-pub fn spawn_exotic(
+pub fn spawn_exotic<'w, 's, 'a>(
     x: f32,
     y: f32,
-    mut commands: &mut Commands<'_, '_>,
+    mut commands: &'a mut Commands<'w, 's>,
     texture: Handle<Image>,
     value: f32,
-) {
+) -> EntityCommands<'w, 's, 'a> {
     commands.spawn((
         SpriteBundle {
             transform: Transform::from_xyz(x, y, 0.0),
@@ -114,7 +116,7 @@ pub fn spawn_exotic(
             radius: rand::thread_rng().gen_range((value * 100.)..(value * 150.)),
             progress: 0.0,
         },
-    ));
+    ))
 }
 
 pub fn spawn_salvage(
@@ -134,7 +136,7 @@ pub fn spawn_salvage(
             transform: Transform::from_xyz(x, y, 0.0),
             texture,
             sprite: Sprite {
-                color: Color::rgba(2., 2., 2., 1.),
+                color: Color::rgba(value / 10., value / 10., value / 10., value / 10.),
                 ..Default::default()
             },
             ..Default::default()
@@ -162,7 +164,7 @@ pub fn spawn_upgrade(
             texture_atlas,
             sprite: TextureAtlasSprite {
                 index: upgrade.get_sprite_index(),
-                color: Color::rgba(8., 8., 8., 1.),
+                color: Color::rgba(8., 8., 4., 1.),
                 ..Default::default()
             },
             ..Default::default()

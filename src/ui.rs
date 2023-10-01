@@ -472,7 +472,7 @@ fn update_ui(
             || *game_state == GameState::GameOver
         {
             central_text.sections[0].value = "".to_string();
-        } else if !career.intro_complete {
+        } else if !career.intro_complete() {
             // Let the intro system handle it.
         } else if m_player_jammed.is_some() {
             central_text.sections[0].value = format!("Hyperdrive JAMMED! Leave jamming area!");

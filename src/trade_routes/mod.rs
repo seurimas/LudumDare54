@@ -1,4 +1,9 @@
-use crate::{game_state, home::HomeInSystem, player, prelude::*};
+use crate::{
+    game_state,
+    home::{Career, HomeInSystem},
+    player,
+    prelude::*,
+};
 
 pub const ARENA_SIZE: f32 = 1000.0;
 pub const HYPERDRIVE_SPEED: f32 = 500.0;
@@ -12,22 +17,21 @@ pub struct TradeRoutesPlugin;
 
 impl Plugin for TradeRoutesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnExit(GameState::Loading), spawn_starting_system)
-            .add_systems(
-                Update,
-                (
-                    maintain_current_system,
-                    handle_music.run_if(not(in_state(GameState::Loading))),
-                    update_system_indicators.run_if(in_state(GameState::Playing)),
-                    pick_hyperdrive_target.run_if(in_state(GameState::Playing)),
-                    engage_hyperdrive_system.run_if(in_state(GameState::Playing)),
-                    initialize_local_region.run_if(in_state(GameState::Hyperdrive)),
-                    cargo_ship_jet_animation_system,
-                    cargo_ship_defense_system.run_if(in_state(GameState::Playing)),
-                    cargo_ship_escape_system.run_if(in_state(GameState::Playing)),
-                    cargo_ship_drop_system.run_if(in_state(GameState::Playing)),
-                ),
-            );
+        app.add_systems(
+            Update,
+            (
+                maintain_current_system,
+                handle_music.run_if(not(in_state(GameState::Loading))),
+                update_system_indicators.run_if(in_state(GameState::Playing)),
+                pick_hyperdrive_target.run_if(in_state(GameState::Playing)),
+                engage_hyperdrive_system.run_if(in_state(GameState::Playing)),
+                initialize_local_region.run_if(in_state(GameState::Hyperdrive)),
+                cargo_ship_jet_animation_system,
+                cargo_ship_defense_system.run_if(in_state(GameState::Playing)),
+                cargo_ship_escape_system.run_if(in_state(GameState::Playing)),
+                cargo_ship_drop_system.run_if(in_state(GameState::Playing)),
+            ),
+        );
     }
 }
 
@@ -49,6 +53,7 @@ fn handle_music(
     game_assets: Res<GameAssets>,
     game_state: Res<State<GameState>>,
     mut commands: Commands,
+    career: Res<Career>,
     query: Query<(Entity, &Handle<AudioSource>, &AudioSink), With<Music>>,
     cargo_ships: Query<&CargoShip>,
     home_system: Query<(&HomeInSystem, Option<&CurrentSystemRegion>)>,
@@ -72,6 +77,9 @@ fn handle_music(
     }
     if *game_state == GameState::Retire {
         current_song = ActiveSong::Retire;
+    }
+    if !career.intro_complete() {
+        current_song = ActiveSong::Title;
     }
     let new_handle = match current_song {
         ActiveSong::Hyperdrive => None,

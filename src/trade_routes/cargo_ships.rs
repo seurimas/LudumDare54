@@ -10,6 +10,7 @@ enum CargoShipEscape {
 
 #[derive(Component)]
 pub struct CargoShip {
+    pub value_modifier: f32,
     pub aggressed: bool,
     sections_health: [f32; 8],
     pub sections_destroyed: [bool; 8],
@@ -22,8 +23,9 @@ pub struct CargoShip {
 const CARGO_SHIP_SECTION_HEALTH: f32 = 75.0;
 
 impl CargoShip {
-    pub fn new() -> Self {
+    pub fn new(value_modifier: f32) -> Self {
         Self {
+            value_modifier,
             aggressed: false,
             sections_health: [CARGO_SHIP_SECTION_HEALTH; 8],
             sections_destroyed: [false; 8],
@@ -48,11 +50,17 @@ impl CargoShip {
     }
 
     pub fn section_damaged(&self, section: usize) -> Option<usize> {
-        if self.sections_health[section] <= 24.0 && !self.sections_destroyed[section] {
+        if self.sections_health[section] <= CARGO_SHIP_SECTION_HEALTH * 0.15
+            && !self.sections_destroyed[section]
+        {
             Some(2)
-        } else if self.sections_health[section] <= 50.0 && !self.sections_destroyed[section] {
+        } else if self.sections_health[section] <= CARGO_SHIP_SECTION_HEALTH * 0.50
+            && !self.sections_destroyed[section]
+        {
             Some(1)
-        } else if self.sections_health[section] <= 90.0 && !self.sections_destroyed[section] {
+        } else if self.sections_health[section] <= CARGO_SHIP_SECTION_HEALTH * 0.90
+            && !self.sections_destroyed[section]
+        {
             Some(0)
         } else {
             None
@@ -113,12 +121,12 @@ impl CargoSection {
     }
 }
 
-pub fn spawn_cargo_ship(
+pub fn spawn_cargo_ships(
     mut commands: Commands,
     game_assets: Res<GameAssets>,
     skeletons: Res<Skeletons>,
+    count: usize,
 ) {
-    let (indicator, indicator_text) = create_indicator_with_text(&mut commands, &game_assets, true);
     let angle = rand::thread_rng().gen_range(0.0..PI * 2.0);
     let direction = Vec2::new(f32::cos(angle), f32::sin(angle));
     let transform = Transform::from_xyz(
@@ -127,32 +135,45 @@ pub fn spawn_cargo_ship(
         0.,
     );
     let mut inertia = InertiaVolume::new(CARGO_SHIP_MASS, 0.0);
-    inertia.velocity = -direction * 10.0;
+    inertia.velocity = -direction * 20.0;
     inertia.set_rotation(-angle);
-    commands
-        .spawn((
-            SpineBundle {
-                transform,
-                skeleton: skeletons.cargo_ship.clone(),
-                ..Default::default()
-            },
-            inertia,
-            DistantIndicator::new_local(indicator, indicator_text),
-            CargoShip::new(),
-            Regional,
-            Jammable,
-        ))
-        .with_children(|parent| {
-            // Spawn all 8 cargo sections.
-            parent.spawn((CargoSection::bundle(0),));
-            parent.spawn((CargoSection::bundle(1),));
-            parent.spawn((CargoSection::bundle(2),));
-            parent.spawn((CargoSection::bundle(3),));
-            parent.spawn((CargoSection::bundle(4),));
-            parent.spawn((CargoSection::bundle(5),));
-            parent.spawn((CargoSection::bundle(6),));
-            parent.spawn((CargoSection::bundle(7),));
-        });
+    for idx in 0..count {
+        let mut my_transform = transform.clone();
+        if idx == 1 {
+            my_transform.translation.x += direction.y * 300.0;
+            my_transform.translation.y -= direction.x * 300.0;
+        } else if idx == 2 {
+            my_transform.translation.x -= direction.y * 300.0;
+            my_transform.translation.y += direction.x * 300.0;
+        }
+        println!("Spawning cargo ship at {:?}", my_transform.translation);
+        let (indicator, indicator_text) =
+            create_indicator_with_text(&mut commands, &game_assets, true);
+        commands
+            .spawn((
+                SpineBundle {
+                    transform: my_transform,
+                    skeleton: skeletons.cargo_ship.clone(),
+                    ..Default::default()
+                },
+                inertia.clone(),
+                DistantIndicator::new_local(indicator, indicator_text),
+                CargoShip::new(count as f32 * 0.5 + 0.5),
+                Regional,
+                Jammable,
+            ))
+            .with_children(|parent| {
+                // Spawn all 8 cargo sections.
+                parent.spawn((CargoSection::bundle(0),));
+                parent.spawn((CargoSection::bundle(1),));
+                parent.spawn((CargoSection::bundle(2),));
+                parent.spawn((CargoSection::bundle(3),));
+                parent.spawn((CargoSection::bundle(4),));
+                parent.spawn((CargoSection::bundle(5),));
+                parent.spawn((CargoSection::bundle(6),));
+                parent.spawn((CargoSection::bundle(7),));
+            });
+    }
 }
 
 const JET_GREENNESS: f32 = 24.0;
@@ -214,7 +235,7 @@ pub fn cargo_ship_drop_system(
                             &mut commands,
                             game_assets.salvage.clone(),
                             rand::random::<f32>() * 1.0 + 2.0,
-                            rand::random::<f32>() * 20.0 + 10.0,
+                            (rand::random::<f32>() * 20.0 + 10.0) * cargo_ship.value_modifier,
                         );
                     }
                     spawn_upgrade(
@@ -224,7 +245,7 @@ pub fn cargo_ship_drop_system(
                             + Quat::from_rotation_z(rand::random::<f32>() * PI * 2.)
                                 .mul_vec3(Vec3::X)
                                 .truncate()
-                                * (rand::random::<f32>() * 200.0),
+                                * (rand::random::<f32>() * 50.0),
                         &mut commands,
                         game_assets.upgrades.clone(),
                         Upgrade::random(),
@@ -277,6 +298,9 @@ pub fn cargo_ship_escape_system(
     game_assets: Res<GameAssets>,
 ) {
     let dt = time.delta_seconds();
+    let someone_aggressed = cargo_ships
+        .iter_mut()
+        .any(|(_, cargo_ship, _, _, _)| cargo_ship.aggressed);
     for (cargo_entity, mut cargo_ship, mut inertia, indicators, m_jammed) in cargo_ships.iter_mut()
     {
         if cargo_ship.aggressed && cargo_ship.escape_state == CargoShipEscape::Passive {
@@ -285,6 +309,8 @@ pub fn cargo_ship_escape_system(
             } else {
                 CargoShipEscape::Jumping { progress: 0.0 }
             };
+        } else if !cargo_ship.aggressed && (someone_aggressed || m_jammed.is_some()) {
+            cargo_ship.aggressed = true;
         }
         match cargo_ship.escape_state {
             CargoShipEscape::Jumping { progress } => {

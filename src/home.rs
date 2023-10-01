@@ -1,4 +1,4 @@
-use crate::{prelude::*, ui::UiState};
+use crate::{intro::INTRO_STAGES, prelude::*, ui::UiState};
 
 pub struct HomePlugin;
 
@@ -22,7 +22,7 @@ pub struct Career {
     pub last_repair_costs: f32,
     pub last_upgrades: Vec<Upgrade>,
     pub days_survived: u32,
-    pub intro_complete: bool,
+    pub intro_stage: usize,
 }
 
 impl Default for Career {
@@ -32,8 +32,14 @@ impl Default for Career {
             last_repair_costs: 0.0,
             last_upgrades: Vec::new(),
             days_survived: 0,
-            intro_complete: false,
+            intro_stage: 0,
         }
+    }
+}
+
+impl Career {
+    pub fn intro_complete(&self) -> bool {
+        self.intro_stage > INTRO_STAGES
     }
 }
 

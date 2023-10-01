@@ -17,12 +17,13 @@ impl Plugin for GameOverPlugin {
 }
 
 fn check_player_death_system(
-    player: Query<&Player>,
+    mut player: Query<(&Player, &mut Transform)>,
     current_game_state: Res<State<GameState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
 ) {
-    if player.single().is_dead() && *current_game_state == GameState::Playing {
+    if player.single().0.is_dead() && *current_game_state == GameState::Playing {
         next_game_state.set(GameState::GameOver);
+        player.single_mut().1.scale = Vec3::ZERO;
     }
 }
 
