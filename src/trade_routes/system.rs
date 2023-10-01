@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use super::spawn_cargo_ship;
+use super::{spawn_cargo_ship, Jammer};
 
 #[derive(Component)]
 pub struct SystemLocation {
@@ -48,6 +48,11 @@ pub fn spawn_starting_system(mut commands: Commands, game_assets: Res<GameAssets
             1,
         );
     }
+    commands.spawn((
+        TransformBundle::default(),
+        Jammer { radius: 100.0 },
+        Regional,
+    ));
 }
 
 fn spawn_asteroids_in_system(

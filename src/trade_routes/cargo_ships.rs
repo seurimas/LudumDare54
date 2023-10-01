@@ -103,6 +103,7 @@ pub fn spawn_cargo_ship(
             DistantIndicator::new_local(indicator, indicator_text),
             CargoShip::new(),
             Regional,
+            Jammable,
         ))
         .with_children(|parent| {
             // Spawn all 8 cargo sections.

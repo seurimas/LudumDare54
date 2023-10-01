@@ -5,7 +5,9 @@ pub use crate::indicators::{create_indicator_with_text, DistantIndicator};
 pub use crate::physics::{Collision, InertiaVolume};
 pub use crate::pickups::{spawn_exotic, spawn_salvage, Pickup};
 pub use crate::player::Player;
-pub use crate::trade_routes::{CargoSection, CargoShip, Regional, SystemLocation, ARENA_SIZE};
+pub use crate::trade_routes::{
+    CargoSection, CargoShip, Jammable, Jammed, Jammer, Regional, SystemLocation, ARENA_SIZE,
+};
 pub use crate::turrets::*;
 use bevy::ecs::system::Command;
 pub use bevy::prelude::*;

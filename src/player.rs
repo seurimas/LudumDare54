@@ -92,6 +92,7 @@ fn spawn_player(mut commands: Commands, skeletons: Res<Skeletons>) {
         InertiaVolume::new(1.0, 64.0),
         Player::new(),
         SystemLocation::new(Vec2::new(0.0, 0.0)),
+        Jammable,
     ));
     commands.spawn((
         Camera2dBundle {

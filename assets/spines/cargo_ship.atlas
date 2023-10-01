@@ -8,9 +8,11 @@ offsets:16,16,512,256
 CargoSection
 bounds:445,34,61,62
 offsets:1,1,64,64
+Hyperdrive
+bounds:463,194,32,32
 Jet
 bounds:445,98,128,16
 rotate:90
 Turret
-bounds:463,194,31,32
+bounds:463,160,31,32
 offsets:0,0,32,32
