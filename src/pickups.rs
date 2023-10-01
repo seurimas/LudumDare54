@@ -4,7 +4,6 @@ pub struct PickupsPlugin;
 
 impl Plugin for PickupsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Playing), spawn_debug_drops);
         app.add_systems(Update, (player_pickup_system,));
     }
 }
@@ -12,11 +11,7 @@ impl Plugin for PickupsPlugin {
 #[derive(Component)]
 pub enum Pickup {
     ExoticMaterial(f32),
-    Salvage(f32),
-}
-
-fn spawn_debug_drops(mut commands: Commands, game_assets: Res<GameAssets>) {
-    spawn_exotic(300., 0., &mut commands, game_assets.exotic.clone(), 100.);
+    Salvage { mass: f32, value: f32 },
 }
 
 pub fn spawn_exotic(
@@ -40,7 +35,7 @@ pub fn spawn_exotic(
         Pickup::ExoticMaterial(value),
         Regional,
         Jammer {
-            radius: rand::thread_rng().gen_range(1000.0..1500.0),
+            radius: rand::thread_rng().gen_range((value * 100.)..(value * 150.)),
             progress: 0.0,
         },
     ));
@@ -52,6 +47,7 @@ pub fn spawn_salvage(
     velocity: Vec2,
     mut commands: &mut Commands<'_, '_>,
     texture: Handle<Image>,
+    mass: f32,
     value: f32,
 ) {
     let mut inertia_volume = InertiaVolume::new(1.0, 8.0);
@@ -69,7 +65,7 @@ pub fn spawn_salvage(
         },
         Regional,
         inertia_volume,
-        Pickup::Salvage(value),
+        Pickup::Salvage { mass, value },
     ));
 }
 
@@ -84,10 +80,14 @@ fn player_pickup_system(
             if let Ok(pickup) = pickups.get(collision.e1) {
                 match pickup {
                     Pickup::ExoticMaterial(amount) => {
-                        player.exotic_material += amount;
+                        player.exotic_material += amount.min(player.cargo_space_left());
                     }
-                    Pickup::Salvage(amount) => {
-                        player.salvage += amount;
+                    Pickup::Salvage { mass, value } => {
+                        if *mass > player.cargo_space_left() {
+                            continue;
+                        }
+                        player.salvage_mass += mass;
+                        player.salvage_value += value;
                     }
                 }
                 if let Some(mut pickup_entity) = commands.get_entity(collision.e1) {

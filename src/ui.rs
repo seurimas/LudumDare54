@@ -3,8 +3,8 @@ use bevy::text::DEFAULT_FONT_HANDLE;
 use crate::prelude::*;
 
 const CARGO_CELL_COUNT: usize = 100;
-const CARGO_CELL_ROWS: usize = 4;
-const CARGO_CELL_COLUMNS: usize = CARGO_CELL_COUNT / CARGO_CELL_ROWS;
+const CARGO_CELL_COLUMNS: usize = 20;
+const CARGO_CELL_ROWS: usize = CARGO_CELL_COUNT / CARGO_CELL_COLUMNS;
 const CARGO_CELL_SIZE: f32 = 16.;
 
 pub struct GameUiPlugin;
@@ -103,18 +103,27 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
                             position_type: PositionType::Absolute,
                             left: Val::Px(0.),
                             top: Val::Px(-20.),
-                            width: Val::Px(200.),
                             height: Val::Px(20.),
                             ..Default::default()
                         },
-                        text: Text::from_section(
-                            "Cargo: 0/0",
-                            TextStyle {
-                                font: DEFAULT_FONT_HANDLE.typed(),
-                                font_size: 20.,
-                                color: Color::WHITE,
+                        text: Text::from_sections(vec![
+                            TextSection {
+                                value: "Cargo: 0/0".to_string(),
+                                style: TextStyle {
+                                    font: DEFAULT_FONT_HANDLE.typed(),
+                                    font_size: 20.,
+                                    color: Color::WHITE,
+                                },
                             },
-                        )
+                            TextSection {
+                                value: "Value: 0/0".to_string(),
+                                style: TextStyle {
+                                    font: DEFAULT_FONT_HANDLE.typed(),
+                                    font_size: 20.,
+                                    color: Color::WHITE,
+                                },
+                            },
+                        ])
                         .with_alignment(TextAlignment::Center),
                         ..Default::default()
                     })
@@ -175,8 +184,8 @@ fn update_ui(
     const SALVAGE_COLOR: Color = Color::rgba(0.5, 0.5, 0.5, 1.0);
     let mut exotic_drawn = 0;
     let mut salvage_drawn = 0;
-    let exotics = player.exotic_material.ceil() as i32;
-    let salvage = player.salvage.floor() as i32;
+    let exotics = player.exotic_material.floor() as i32;
+    let salvage = player.salvage_mass.ceil() as i32;
     for cell in ui_state.cargo_cells.iter() {
         if let Ok(mut cell_bg) = bg_color.get_mut(*cell) {
             if exotic_drawn < exotics {
@@ -192,5 +201,6 @@ fn update_ui(
     }
     if let Ok(mut cargo_text) = text.get_mut(ui_state.cargo_text) {
         cargo_text.sections[0].value = format!("Cargo: {}/{}", exotics + salvage, CARGO_CELL_COUNT);
+        cargo_text.sections[1].value = format!("Value: {}", player.salvage_value.floor() as i32);
     }
 }

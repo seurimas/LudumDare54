@@ -53,9 +53,6 @@ pub struct Player {
     // Cooldown for main weapon.
     pub main_cooldown: f32,
     pub main_speed: f32,
-    // Cargo values
-    pub exotic_material: f32,
-    pub salvage: f32,
     // Hyperdrive
     pub hyperdrive_target: Option<Entity>,
     // Health.
@@ -67,9 +64,10 @@ pub struct Player {
     pub shield_recharge_timer: f32,
     pub shield_recharge_rate: f32,
     // Cargo.
+    pub max_cargo: f32,
     pub salvage_mass: f32,
     pub salvage_value: f32,
-    pub exotic_material_mass: f32,
+    pub exotic_material: f32,
 }
 
 impl Player {
@@ -83,8 +81,6 @@ impl Player {
             thrust_braking_strength: 400.0,
             main_cooldown: 0.0,
             main_speed: 1.0 / 2.0,
-            exotic_material: 0.0,
-            salvage: 0.0,
             hyperdrive_target: None,
             max_shields: 100.0,
             shields: 100.0,
@@ -93,9 +89,10 @@ impl Player {
             shield_recharge_delay: 5.0,
             shield_recharge_timer: 0.0,
             shield_recharge_rate: 10.0,
+            max_cargo: 100.0,
             salvage_mass: 0.0,
             salvage_value: 0.0,
-            exotic_material_mass: 0.0,
+            exotic_material: 0.0,
         }
     }
 
@@ -105,6 +102,10 @@ impl Player {
         } else {
             self.hull -= amount;
         }
+    }
+
+    pub fn cargo_space_left(&self) -> f32 {
+        (self.max_cargo - self.salvage_mass - self.exotic_material).max(0.)
     }
 }
 

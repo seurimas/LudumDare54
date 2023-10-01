@@ -37,7 +37,7 @@ pub fn spawn_starting_system(mut commands: Commands, game_assets: Res<GameAssets
             ),
             &game_assets,
             &mut commands,
-            rand::thread_rng().gen_range(3..6),
+            rand::thread_rng().gen_range(5..8),
         );
     }
     for _ in 0..10 {
@@ -59,6 +59,18 @@ pub fn spawn_starting_system(mut commands: Commands, game_assets: Res<GameAssets
         &game_assets,
         &mut commands,
     );
+}
+
+pub fn spawn_asteroid_field(mut commands: Commands, game_assets: Res<GameAssets>, count: usize) {
+    for _ in 0..count {
+        spawn_exotic(
+            rand::thread_rng().gen_range((-ARENA_SIZE)..ARENA_SIZE),
+            rand::thread_rng().gen_range((-ARENA_SIZE)..ARENA_SIZE),
+            &mut commands,
+            game_assets.exotic.clone(),
+            rand::thread_rng().gen_range(5.0..15.0),
+        )
+    }
 }
 
 fn spawn_asteroids_in_system(
@@ -249,6 +261,7 @@ pub fn initialize_local_region(
 
         match regions.get(new_region).unwrap() {
             (Some(asteroids), _, _) => {
+                spawn_asteroid_field(commands, game_assets, asteroids.0);
                 next_state.set(GameState::Playing);
             }
             (_, Some(cargo_ships), _) => {

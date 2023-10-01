@@ -25,7 +25,7 @@ impl CargoShip {
             aggressed: false,
             sections_health: [100.0; 8],
             sections_destroyed: [false; 8],
-            fire_speed: 2.,
+            fire_speed: 1.,
             turret_cooldowns: [0.0; 2],
             escape_state: CargoShipEscape::Passive,
             jump_time: 3.0,
@@ -181,6 +181,7 @@ pub fn cargo_ship_drop_system(
                                     * (rand::random::<f32>() * 100.0),
                             &mut commands,
                             game_assets.salvage.clone(),
+                            rand::random::<f32>() * 20.0 + 10.0,
                             rand::random::<f32>() * 20.0 + 10.0,
                         );
                     }
