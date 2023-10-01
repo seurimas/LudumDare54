@@ -203,11 +203,18 @@ const CARGO_SHIP_LASER_DISTANCE_SQ: f32 = 1000.0 * 1000.0;
 
 pub fn cargo_ship_escape_system(
     time: Res<Time>,
-    mut cargo_ships: Query<(Entity, &mut CargoShip, &mut InertiaVolume, Option<&Jammed>)>,
+    mut cargo_ships: Query<(
+        Entity,
+        &mut CargoShip,
+        &mut InertiaVolume,
+        &DistantIndicator,
+        Option<&Jammed>,
+    )>,
     mut commands: Commands,
 ) {
     let dt = time.delta_seconds();
-    for (cargo_entity, mut cargo_ship, mut inertia, m_jammed) in cargo_ships.iter_mut() {
+    for (cargo_entity, mut cargo_ship, mut inertia, indicators, m_jammed) in cargo_ships.iter_mut()
+    {
         if cargo_ship.aggressed && cargo_ship.escape_state == CargoShipEscape::Passive {
             cargo_ship.escape_state = if m_jammed.is_some() {
                 CargoShipEscape::Jammed
@@ -235,6 +242,8 @@ pub fn cargo_ship_escape_system(
                 inertia.set_forward_speed(HYPERDRIVE_SPEED * 2.0);
                 if progress > 1. {
                     commands.entity(cargo_entity).despawn_recursive();
+                    commands.entity(indicators.get_indicator()).despawn();
+                    commands.entity(indicators.get_indicator_text()).despawn();
                 } else {
                     cargo_ship.escape_state = CargoShipEscape::Jumped {
                         progress: progress + dt,

@@ -46,6 +46,36 @@ impl DistantIndicator {
             visible: false,
         }
     }
+
+    pub fn get_indicator(&self) -> Entity {
+        match self {
+            Self::Local {
+                indicator,
+                indicator_text: _,
+            } => *indicator,
+            Self::System {
+                indicator,
+                indicator_text: _,
+                direction: _,
+                visible: _,
+            } => *indicator,
+        }
+    }
+
+    pub fn get_indicator_text(&self) -> Entity {
+        match self {
+            Self::Local {
+                indicator: _,
+                indicator_text,
+            } => *indicator_text,
+            Self::System {
+                indicator: _,
+                indicator_text,
+                direction: _,
+                visible: _,
+            } => *indicator_text,
+        }
+    }
 }
 
 pub fn create_indicator_with_text(

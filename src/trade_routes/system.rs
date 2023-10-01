@@ -1,4 +1,7 @@
-use crate::prelude::*;
+use crate::{
+    home::{spawn_home_in_system, HomeInSystem},
+    prelude::*,
+};
 
 use super::{spawn_cargo_ship, Jammer};
 
@@ -48,6 +51,14 @@ pub fn spawn_starting_system(mut commands: Commands, game_assets: Res<GameAssets
             1,
         );
     }
+    spawn_home_in_system(
+        Vec2::new(
+            rand::thread_rng().gen_range((-500.)..500.),
+            rand::thread_rng().gen_range((-500.)..500.),
+        ),
+        &game_assets,
+        &mut commands,
+    );
 }
 
 fn spawn_asteroids_in_system(
@@ -115,6 +126,7 @@ pub fn update_system_indicators(
         &mut DistantIndicator,
         Option<&AsteroidsInSystem>,
         Option<&CargoShipsInSystem>,
+        Option<&HomeInSystem>,
         Option<&CurrentSystemRegion>,
     )>,
     mut indicator_texts: Query<&mut Text>,
@@ -130,7 +142,7 @@ pub fn update_system_indicators(
     sorted_indicators.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
     let mut idx = 0;
     for (entity, distance) in sorted_indicators.iter() {
-        if let Ok((_, system_location, mut indicator, m_asteroid, m_ship, m_current)) =
+        if let Ok((_, system_location, mut indicator, m_asteroid, m_ship, m_home, m_current)) =
             indicators.get_mut(*entity)
         {
             match &mut *indicator {
@@ -149,6 +161,8 @@ pub fn update_system_indicators(
                                 "Asteroids"
                             } else if m_ship.is_some() {
                                 "Cargo Ships"
+                            } else if m_home.is_some() {
+                                "Hideout"
                             } else {
                                 "Unknown"
                             }
@@ -161,6 +175,8 @@ pub fn update_system_indicators(
                     }
                     if m_current.is_some() {
                         *visible = false;
+                    } else if m_home.is_some() {
+                        *visible = true;
                     } else {
                         *visible = idx < MAX_HYPERDRIVE_TARGETS;
                         idx += 1;
@@ -171,8 +187,6 @@ pub fn update_system_indicators(
         }
     }
 }
-
-const HYPERDRIVE_SPEED: f32 = 500.0;
 
 pub fn engage_hyperdrive_system(
     mut cooldown: Local<f32>,
@@ -202,7 +216,11 @@ pub fn initialize_local_region(
     mut next_state: ResMut<NextState<GameState>>,
     mut player: Query<(Entity, &Player, &mut InertiaVolume, &mut Transform)>,
     mut system_locations: Query<&mut SystemLocation>,
-    regions: Query<(Option<&AsteroidsInSystem>, Option<&CargoShipsInSystem>)>,
+    regions: Query<(
+        Option<&AsteroidsInSystem>,
+        Option<&CargoShipsInSystem>,
+        Option<&HomeInSystem>,
+    )>,
     regional_entities: Query<(Entity, &Regional)>,
     time: Res<Time>,
     mut commands: Commands,
@@ -230,12 +248,15 @@ pub fn initialize_local_region(
         }
 
         match regions.get(new_region).unwrap() {
-            (Some(asteroids), _) => {
+            (Some(asteroids), _, _) => {
                 next_state.set(GameState::Playing);
             }
-            (_, Some(cargo_ships)) => {
+            (_, Some(cargo_ships), _) => {
                 spawn_cargo_ship(commands, game_assets, skeletons);
                 next_state.set(GameState::Playing);
+            }
+            (_, _, Some(_)) => {
+                next_state.set(GameState::Home);
             }
             _ => {
                 next_state.set(GameState::Playing);

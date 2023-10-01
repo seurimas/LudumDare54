@@ -5,6 +5,7 @@ pub enum GameState {
     Loading,
     Playing,
     Hyperdrive,
+    Home,
 }
 
 impl Default for GameState {

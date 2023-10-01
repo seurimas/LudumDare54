@@ -29,7 +29,7 @@ impl Plugin for PlayerPlugin {
         .add_systems(
             Update,
             (
-                player_movement_system,
+                player_movement_system.run_if(in_state(GameState::Playing)),
                 player_laser_aim_system.run_if(in_state(GameState::Playing)),
                 player_laser_fire_system.run_if(in_state(GameState::Playing)),
                 player_jet_animation_system,
@@ -58,6 +58,18 @@ pub struct Player {
     pub salvage: f32,
     // Hyperdrive
     pub hyperdrive_target: Option<Entity>,
+    // Health.
+    pub max_shields: f32,
+    pub shields: f32,
+    pub max_hull: f32,
+    pub hull: f32,
+    pub shield_recharge_delay: f32,
+    pub shield_recharge_timer: f32,
+    pub shield_recharge_rate: f32,
+    // Cargo.
+    pub salvage_mass: f32,
+    pub salvage_value: f32,
+    pub exotic_material_mass: f32,
 }
 
 impl Player {
@@ -74,6 +86,24 @@ impl Player {
             exotic_material: 0.0,
             salvage: 0.0,
             hyperdrive_target: None,
+            max_shields: 100.0,
+            shields: 100.0,
+            max_hull: 100.0,
+            hull: 100.0,
+            shield_recharge_delay: 5.0,
+            shield_recharge_timer: 0.0,
+            shield_recharge_rate: 10.0,
+            salvage_mass: 0.0,
+            salvage_value: 0.0,
+            exotic_material_mass: 0.0,
+        }
+    }
+
+    pub fn take_damage(&mut self, amount: f32) {
+        if self.shields > 0.0 {
+            self.shields -= amount;
+        } else {
+            self.hull -= amount;
         }
     }
 }

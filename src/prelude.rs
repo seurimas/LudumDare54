@@ -6,6 +6,7 @@ pub use crate::jamming::{Jammable, Jammed, Jammer};
 pub use crate::physics::{Collision, InertiaVolume};
 pub use crate::pickups::{spawn_exotic, spawn_salvage, Pickup};
 pub use crate::player::Player;
+pub use crate::space_pixels::SpacePixel;
 pub use crate::trade_routes::{
     CargoSection, CargoShip, Regional, SystemLocation, ARENA_SIZE, HYPERDRIVE_SPEED,
 };

@@ -1,14 +1,17 @@
 mod assets;
 mod bullets;
 mod game_state;
+mod home;
 mod indicators;
 mod jamming;
 mod physics;
 mod pickups;
 mod player;
 mod prelude;
+mod space_pixels;
 mod trade_routes;
 mod turrets;
+mod ui;
 
 #[macro_use]
 extern crate lazy_static;
@@ -20,7 +23,9 @@ use jamming::JammingPlugin;
 use physics::PhysicsPlugin;
 use pickups::PickupsPlugin;
 use player::PlayerPlugin;
+use space_pixels::SpacePixelsPlugin;
 use trade_routes::TradeRoutesPlugin;
+use ui::GameUiPlugin;
 
 use crate::prelude::*;
 
@@ -39,6 +44,8 @@ fn main() {
             PhysicsPlugin,
             PickupsPlugin,
             PlayerPlugin,
+            GameUiPlugin,
+            SpacePixelsPlugin,
         ))
         .run();
 }
