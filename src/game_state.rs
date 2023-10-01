@@ -4,6 +4,7 @@ use crate::prelude::*;
 pub enum GameState {
     Loading,
     Playing,
+    Hyperdrive,
 }
 
 impl Default for GameState {

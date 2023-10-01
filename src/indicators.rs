@@ -26,6 +26,7 @@ pub enum DistantIndicator {
         indicator: Entity,
         indicator_text: Entity,
         direction: Vec2,
+        visible: bool,
     },
 }
 
@@ -42,6 +43,7 @@ impl DistantIndicator {
             indicator,
             indicator_text,
             direction,
+            visible: false,
         }
     }
 }
@@ -49,6 +51,7 @@ impl DistantIndicator {
 pub fn create_indicator_with_text(
     commands: &mut Commands,
     game_assets: &GameAssets,
+    regional: bool,
 ) -> (Entity, Entity) {
     let indicator = commands
         .spawn(ImageBundle {
@@ -73,6 +76,10 @@ pub fn create_indicator_with_text(
             ..Default::default()
         })
         .id();
+    if regional {
+        commands.entity(indicator).insert(Regional);
+        commands.entity(indicator_text).insert(Regional);
+    }
     (indicator, indicator_text)
 }
 
@@ -104,20 +111,26 @@ fn display_indicator_system(
                 let translation = transform.translation;
                 let x = translation.x - camera_translation.x;
                 let y = translation.y - camera_translation.y;
-                (false, *indicator, *indicator_text, Vec3::new(x, y, 0.0))
+                let direction = Vec3::new(x, y, 0.0);
+                (
+                    direction.length() > INDICATOR_DISTANCE,
+                    *indicator,
+                    *indicator_text,
+                    direction,
+                )
             }
             DistantIndicator::System {
+                visible,
                 indicator,
                 indicator_text,
                 direction,
-            } => (true, *indicator, *indicator_text, direction.extend(0.)),
+            } => (*visible, *indicator, *indicator_text, direction.extend(0.)),
         })
         .collect::<Vec<_>>();
-    for (system, indicator, indicator_text, direction) in indicator_directions {
-        let distance = direction.length();
+    for (visible, indicator, indicator_text, direction) in indicator_directions {
         let direction = direction.normalize();
         let angle = (-direction.y).atan2(direction.x);
-        let visible = if system || distance > INDICATOR_DISTANCE {
+        let visible = if visible {
             Visibility::Visible
         } else {
             Visibility::Hidden
@@ -150,7 +163,6 @@ fn display_indicator_system(
                     + -direction.y * INDICATOR_DISTANCE
                     + INDICATOR_TEXT_OFFSET,
             );
-            if !system {}
         }
     }
 }

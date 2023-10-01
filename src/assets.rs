@@ -54,6 +54,9 @@ pub struct Skeletons {
 pub struct Lasers {
     pub player_laser_mesh: Handle<Mesh>,
     pub player_laser_material: Handle<ColorMaterial>,
+    //
+    pub cargo_ship_laser_mesh: Handle<Mesh>,
+    pub cargo_ship_laser_material: Handle<ColorMaterial>,
 }
 
 fn create_skeletons(
@@ -88,8 +91,14 @@ fn create_lasers(
     let player_laser_material =
         materials.add(ColorMaterial::from(Color::rgba(7.5, 0.0, 7.5, 10.0)));
 
+    let cargo_ship_laser_mesh = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(7.5, 3.75))));
+    let cargo_ship_laser_material =
+        materials.add(ColorMaterial::from(Color::rgba(7.5, 7.5, 0.0, 15.0)));
+
     commands.insert_resource(Lasers {
         player_laser_mesh,
         player_laser_material,
+        cargo_ship_laser_mesh,
+        cargo_ship_laser_material,
     });
 }

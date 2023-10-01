@@ -22,7 +22,9 @@ impl Plugin for PlayerPlugin {
         )
         .add_systems(
             PostUpdate,
-            player_camera_system.before(TransformSystem::TransformPropagate),
+            player_camera_system
+                .before(TransformSystem::TransformPropagate)
+                .run_if(not(in_state(GameState::Hyperdrive))),
         )
         .add_systems(
             Update,
@@ -232,23 +234,6 @@ fn player_laser_aim_system(
     }
 }
 
-fn rotate_towards_world_location(
-    spine: &mut Spine,
-    turret_name: &'static str,
-    location: &Transform,
-    mouse_world_location: Vec2,
-    my_inertia: &InertiaVolume,
-) {
-    let local_turret_location = get_turret_location(spine, turret_name);
-    let turret_location = location.transform_point(local_turret_location.extend(0.0));
-    let turret_direction = mouse_world_location - turret_location.truncate();
-    rotate_turret(
-        &mut *spine,
-        turret_name,
-        turret_direction.y.atan2(turret_direction.x) - my_inertia.rotation(),
-    );
-}
-
 fn player_laser_fire_system(
     mut commands: Commands,
     time: Res<Time>,
@@ -270,6 +255,7 @@ fn player_laser_fire_system(
                         &mut commands,
                         lasers.player_laser_mesh.clone().into(),
                         lasers.player_laser_material.clone(),
+                        Bullet::Player,
                     );
                 }
                 if player.aim_rotation > -PI / 8. || player.aim_rotation < -PI * 7. / 8. {
@@ -281,6 +267,7 @@ fn player_laser_fire_system(
                         &mut commands,
                         lasers.player_laser_mesh.clone().into(),
                         lasers.player_laser_material.clone(),
+                        Bullet::Player,
                     );
                 }
                 if player.aim_rotation < PI / 8. || player.aim_rotation > PI * 7. / 8. {
@@ -292,6 +279,7 @@ fn player_laser_fire_system(
                         &mut commands,
                         lasers.player_laser_mesh.clone().into(),
                         lasers.player_laser_material.clone(),
+                        Bullet::Player,
                     );
                 }
             }

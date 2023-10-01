@@ -27,6 +27,21 @@ pub fn rotate_turret(spine: &mut Spine, turret_name: &'static str, rotation: f32
     }
 }
 
+pub fn rotate_towards_world_location(
+    spine: &mut Spine,
+    turret_name: &'static str,
+    location: &Transform,
+    mouse_world_location: Vec2,
+    my_inertia: &InertiaVolume,
+) -> f32 {
+    let local_turret_location = get_turret_location(spine, turret_name);
+    let turret_location = location.transform_point(local_turret_location.extend(0.0));
+    let turret_direction = mouse_world_location - turret_location.truncate();
+    let rotation = turret_direction.y.atan2(turret_direction.x) - my_inertia.rotation();
+    rotate_turret(&mut *spine, turret_name, rotation);
+    rotation % (2.0 * PI)
+}
+
 pub fn fire_laser_from_turret(
     turret_name: &'static str,
     spine: &Spine,
@@ -35,6 +50,7 @@ pub fn fire_laser_from_turret(
     commands: &mut Commands<'_, '_>,
     mesh: Mesh2dHandle,
     material: Handle<ColorMaterial>,
+    bullet: Bullet,
 ) {
     // Build a transform for the bullet.
     let mut transform = Transform::from_xyz(0.0, 0.0, 0.0);
@@ -58,6 +74,7 @@ pub fn fire_laser_from_turret(
             ..Default::default()
         },
         inertia,
-        Bullet::Player,
+        bullet,
+        Regional,
     ));
 }

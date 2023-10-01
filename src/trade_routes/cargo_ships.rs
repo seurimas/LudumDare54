@@ -5,6 +5,8 @@ pub struct CargoShip {
     aggressed: bool,
     sections_health: [f32; 8],
     sections_destroyed: [bool; 8],
+    fire_speed: f32,
+    turret_cooldowns: [f32; 2],
 }
 
 impl CargoShip {
@@ -13,6 +15,8 @@ impl CargoShip {
             aggressed: false,
             sections_health: [100.0; 8],
             sections_destroyed: [false; 8],
+            fire_speed: 2.,
+            turret_cooldowns: [0.0; 2],
         }
     }
 
@@ -77,16 +81,28 @@ pub fn spawn_cargo_ship(
     game_assets: Res<GameAssets>,
     skeletons: Res<Skeletons>,
 ) {
-    let (indicator, indicator_text) = create_indicator_with_text(&mut commands, &game_assets);
+    let (indicator, indicator_text) = create_indicator_with_text(&mut commands, &game_assets, true);
+    let angle = rand::thread_rng().gen_range(0.0..PI * 2.0);
+    let direction = Vec2::new(f32::cos(angle), f32::sin(angle));
+    let transform = Transform::from_xyz(
+        direction.x * ARENA_SIZE * 2.,
+        direction.y * ARENA_SIZE * 2.,
+        0.,
+    );
+    let mut inertia = InertiaVolume::new(CARGO_SHIP_MASS, 0.0);
+    inertia.velocity = -direction * 10.0;
+    inertia.set_rotation(-angle);
     commands
         .spawn((
             SpineBundle {
+                transform,
                 skeleton: skeletons.cargo_ship.clone(),
                 ..Default::default()
             },
-            InertiaVolume::new(CARGO_SHIP_MASS, 0.0),
+            inertia,
             DistantIndicator::new_local(indicator, indicator_text),
             CargoShip::new(),
+            Regional,
         ))
         .with_children(|parent| {
             // Spawn all 8 cargo sections.
@@ -176,6 +192,74 @@ pub fn cargo_ship_drop_system(
                         section_bone.set_scale_x(0.);
                     }
                 }
+            }
+        }
+    }
+}
+
+const CARGO_SHIP_LASER_SPEED: f32 = 500.0;
+const CARGO_SHIP_LASER_DISTANCE_SQ: f32 = 1000.0 * 1000.0;
+
+pub fn cargo_ship_defense_system(
+    time: Res<Time>,
+    players: Query<(&Player, &Transform, &InertiaVolume)>,
+    mut cargo_ships: Query<(&mut CargoShip, &Transform, &InertiaVolume, &mut Spine)>,
+    mut commands: Commands,
+    lasers: Res<Lasers>,
+) {
+    let player_position = players.single().1.translation;
+    let player_velocity = players.single().2.velocity;
+    for (mut cargo_ship, location, inertia, mut spine) in cargo_ships.iter_mut() {
+        if !cargo_ship.aggressed {
+            continue;
+        }
+        let relative_velocity = player_velocity - inertia.velocity;
+        for (turret_idx, turret_name) in ["forward_turret", "rear_turret"].iter().enumerate() {
+            cargo_ship.turret_cooldowns[turret_idx] -= time.delta_seconds();
+            let local_turret_location = get_turret_location(&spine, turret_name);
+            let turret_location = location
+                .transform_point(local_turret_location.extend(0.0))
+                .truncate();
+            let delta = player_position.truncate() - turret_location;
+            if delta.length_squared() > CARGO_SHIP_LASER_DISTANCE_SQ {
+                // Too far away to shoot
+                continue;
+            }
+            if let Some(target_location) = aim_ahead_location(
+                turret_location,
+                delta,
+                relative_velocity,
+                CARGO_SHIP_LASER_SPEED,
+            ) {
+                rotate_towards_world_location(
+                    &mut spine,
+                    turret_name,
+                    location,
+                    target_location,
+                    inertia,
+                );
+                if cargo_ship.turret_cooldowns[turret_idx] <= 0.0 {
+                    cargo_ship.turret_cooldowns[turret_idx] = cargo_ship.fire_speed;
+                    fire_laser_from_turret(
+                        turret_name,
+                        &spine,
+                        location,
+                        inertia,
+                        &mut commands,
+                        lasers.cargo_ship_laser_mesh.clone().into(),
+                        lasers.cargo_ship_laser_material.clone(),
+                        Bullet::Enemy,
+                    );
+                }
+            } else {
+                // Can't hit the player currently, aim towards them anyways
+                rotate_towards_world_location(
+                    &mut spine,
+                    turret_name,
+                    location,
+                    player_position.truncate(),
+                    inertia,
+                );
             }
         }
     }

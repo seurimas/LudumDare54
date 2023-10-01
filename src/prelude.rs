@@ -5,7 +5,7 @@ pub use crate::indicators::{create_indicator_with_text, DistantIndicator};
 pub use crate::physics::{Collision, InertiaVolume};
 pub use crate::pickups::{spawn_exotic, spawn_salvage, Pickup};
 pub use crate::player::Player;
-pub use crate::trade_routes::{CargoSection, CargoShip, SystemLocation};
+pub use crate::trade_routes::{CargoSection, CargoShip, Regional, SystemLocation, ARENA_SIZE};
 pub use crate::turrets::*;
 use bevy::ecs::system::Command;
 pub use bevy::prelude::*;
@@ -34,5 +34,55 @@ where
         } else {
             // Do nothing, we're fine.
         }
+    }
+}
+
+pub fn aim_ahead_time(delta: Vec2, relative_velocity: Vec2, speed: f32) -> f32 {
+    let a = relative_velocity.length_squared() - speed * speed;
+    let b = 2.0 * relative_velocity.dot(delta);
+    let c = delta.length_squared();
+    let d = b * b - 4.0 * a * c;
+    if d < 0.0 {
+        -1.0
+    } else {
+        let t = (-b - d.sqrt()) / (2.0 * a);
+        if t < 0.0 {
+            -1.0
+        } else {
+            t
+        }
+    }
+}
+
+pub fn aim_ahead_location(
+    start: Vec2,
+    delta: Vec2,
+    relative_velocity: Vec2,
+    speed: f32,
+) -> Option<Vec2> {
+    let t = aim_ahead_time(delta, relative_velocity, speed);
+    if t < 0.0 {
+        None
+    } else {
+        let target = start + delta + relative_velocity * t;
+        Some(target)
+    }
+}
+
+pub fn rotations_match(rotation1: f32, rotation2: f32, leeway: f32) -> bool {
+    let rotation1 = rotation1 % (2.0 * PI);
+    let rotation2 = rotation2 % (2.0 * PI);
+    let diff = (rotation1 - rotation2).abs();
+    diff < leeway
+}
+
+#[cfg(test)]
+mod prelude_tests {
+    use super::*;
+
+    #[test]
+    fn test_rotations_opposite() {
+        assert_eq!(rotations_match(0.0, 0.0, PI / 4.), true);
+        assert_eq!(rotations_match(PI, 0.0, PI / 4.), false);
     }
 }
