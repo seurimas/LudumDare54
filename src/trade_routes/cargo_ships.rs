@@ -42,7 +42,19 @@ impl CargoShip {
     }
 
     pub fn section_alive(&self, section: usize) -> bool {
-        self.sections_destroyed[section]
+        !self.sections_destroyed[section]
+    }
+
+    pub fn section_damaged(&self, section: usize) -> Option<usize> {
+        if self.sections_health[section] <= 24.0 && !self.sections_destroyed[section] {
+            Some(2)
+        } else if self.sections_health[section] <= 50.0 && !self.sections_destroyed[section] {
+            Some(1)
+        } else if self.sections_health[section] <= 90.0 && !self.sections_destroyed[section] {
+            Some(0)
+        } else {
+            None
+        }
     }
 }
 
@@ -59,6 +71,17 @@ const CARGO_SHIP_MASS: f32 = CARGO_SECTION_MASS * 8.0 + 2000.0;
 const SECTION_BONES: [&'static str; 8] = [
     "cargo0", "cargo1", "cargo2", "cargo3", "cargo4", "cargo5", "cargo6", "cargo7",
 ];
+const SECTION_DAMAGE_SLOTS: [&'static str; 8] = [
+    "cargo0_damage",
+    "cargo1_damage",
+    "cargo2_damage",
+    "cargo3_damage",
+    "cargo4_damage",
+    "cargo5_damage",
+    "cargo6_damage",
+    "cargo7_damage",
+];
+const DAMAGE_ATTACHMENTS: [&'static str; 3] = ["Damage0", "Damage1", "Damage2"];
 const SECTION_HIT_ANIMATIONS: [&'static str; 8] = [
     "jiggle0", "jiggle1", "jiggle2", "jiggle3", "jiggle4", "jiggle5", "jiggle6", "jiggle7",
 ];
@@ -181,8 +204,22 @@ pub fn cargo_ship_drop_system(
                                     * (rand::random::<f32>() * 100.0),
                             &mut commands,
                             game_assets.salvage.clone(),
+                            rand::random::<f32>() * 1.0 + 2.0,
                             rand::random::<f32>() * 20.0 + 10.0,
-                            rand::random::<f32>() * 20.0 + 10.0,
+                        );
+                    }
+                    for _ in 0..2 {
+                        spawn_upgrade(
+                            transform.translation().x,
+                            transform.translation().y,
+                            ship_inertia.velocity
+                                + Quat::from_rotation_z(rand::random::<f32>() * PI * 2.)
+                                    .mul_vec3(Vec3::X)
+                                    .truncate()
+                                    * (rand::random::<f32>() * 100.0),
+                            &mut commands,
+                            game_assets.upgrades.clone(),
+                            Upgrade::random(),
                         );
                     }
                     ship_inertia.mass -= CARGO_SECTION_MASS;
@@ -192,6 +229,24 @@ pub fn cargo_ship_drop_system(
                     {
                         // Make the section disappear!
                         section_bone.set_scale_x(0.);
+                    }
+                }
+            } else if cargo_ship.section_alive(section_idx) {
+                let attachment =
+                    cargo_ship
+                        .section_damaged(section_idx)
+                        .and_then(|damage_amount| {
+                            cargo_skeleton.skeleton.get_attachment_for_slot_name(
+                                SECTION_DAMAGE_SLOTS[section_idx],
+                                DAMAGE_ATTACHMENTS[damage_amount],
+                            )
+                        });
+                if let Some(mut slot) = cargo_skeleton
+                    .skeleton
+                    .find_slot_mut(SECTION_DAMAGE_SLOTS[section_idx])
+                {
+                    unsafe {
+                        slot.set_attachment(attachment);
                     }
                 }
             }
@@ -212,6 +267,7 @@ pub fn cargo_ship_escape_system(
         Option<&Jammed>,
     )>,
     mut commands: Commands,
+    game_assets: Res<GameAssets>,
 ) {
     let dt = time.delta_seconds();
     for (cargo_entity, mut cargo_ship, mut inertia, indicators, m_jammed) in cargo_ships.iter_mut()
@@ -230,6 +286,10 @@ pub fn cargo_ship_escape_system(
                 } else {
                     inertia.apply_thrust_force(CARGO_SHIP_THRUST, dt);
                     if progress > cargo_ship.jump_time {
+                        commands.spawn(AudioBundle {
+                            source: game_assets.cargo_ship_hyperdrive.clone(),
+                            settings: PlaybackSettings::DESPAWN,
+                        });
                         cargo_ship.escape_state = CargoShipEscape::Jumped { progress: 0.0 };
                     } else {
                         cargo_ship.escape_state = CargoShipEscape::Jumping {
@@ -270,6 +330,7 @@ pub fn cargo_ship_defense_system(
     mut cargo_ships: Query<(&mut CargoShip, &Transform, &InertiaVolume, &mut Spine)>,
     mut commands: Commands,
     lasers: Res<Lasers>,
+    game_assets: Res<GameAssets>,
 ) {
     let player_position = players.single().1.translation;
     let player_velocity = players.single().2.velocity;
@@ -304,6 +365,10 @@ pub fn cargo_ship_defense_system(
                 );
                 if cargo_ship.turret_cooldowns[turret_idx] <= 0.0 {
                     cargo_ship.turret_cooldowns[turret_idx] = cargo_ship.fire_speed;
+                    commands.spawn(AudioBundle {
+                        source: game_assets.cargo_ship_laser.clone(),
+                        settings: PlaybackSettings::DESPAWN,
+                    });
                     fire_laser_from_turret(
                         turret_name,
                         &spine,

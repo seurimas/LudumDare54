@@ -205,17 +205,29 @@ pub fn engage_hyperdrive_system(
     time: Res<Time>,
     mut commands: Commands,
     mut next_state: ResMut<NextState<GameState>>,
-    mut player: Query<(&Player, &mut InertiaVolume)>,
+    mut player: Query<(&Player, &mut InertiaVolume, Option<&Jammed>)>,
     input: Res<Input<KeyCode>>,
+    game_assets: Res<GameAssets>,
 ) {
     *cooldown -= time.delta_seconds();
     if input.just_pressed(KeyCode::Space) && *cooldown <= 0.0 {
-        let (player, mut player_inertia) = player.single_mut();
+        let (player, mut player_inertia, m_jammed) = player.single_mut();
         if player_inertia.forward_speed() < HYPERDRIVE_SPEED {
             // TODO: Indicate failure.
             return;
         }
+        if m_jammed.is_some() {
+            commands.spawn(AudioBundle {
+                source: game_assets.player_jammed.clone(),
+                settings: PlaybackSettings::DESPAWN,
+            });
+            return;
+        }
         if let Some(_hyperdrive_target) = player.hyperdrive_target {
+            commands.spawn(AudioBundle {
+                source: game_assets.player_hyperdrive.clone(),
+                settings: PlaybackSettings::DESPAWN,
+            });
             player_inertia.set_forward_speed(HYPERDRIVE_SPEED * 2.);
             next_state.set(GameState::Hyperdrive);
             *cooldown = 2.0;

@@ -22,7 +22,7 @@ impl Plugin for TradeRoutesPlugin {
                     initialize_local_region.run_if(in_state(GameState::Hyperdrive)),
                     cargo_ship_jet_animation_system,
                     cargo_ship_defense_system.run_if(in_state(GameState::Playing)),
-                    cargo_ship_escape_system,
+                    cargo_ship_escape_system.run_if(in_state(GameState::Playing)),
                     cargo_ship_drop_system.run_if(in_state(GameState::Playing)),
                 ),
             );

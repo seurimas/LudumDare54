@@ -35,6 +35,9 @@ pub struct GameAssets {
     pub exotic: Handle<Image>,
     #[asset(path = "sprites/salvage.png")]
     pub salvage: Handle<Image>,
+    #[asset(texture_atlas(tile_size_x = 16., tile_size_y = 16., columns = 8, rows = 1))]
+    #[asset(path = "sprites/Upgrades.png")]
+    pub upgrades: Handle<TextureAtlas>,
     // Need to load atlas and jsons, then create skeletons.
     #[asset(path = "spines/player_ship.atlas")]
     pub player_ship_atlas: Handle<Atlas>,
@@ -44,6 +47,25 @@ pub struct GameAssets {
     pub cargo_ship_atlas: Handle<Atlas>,
     #[asset(path = "spines/cargo_ship.json")]
     pub cargo_ship_json: Handle<SkeletonJson>,
+    // Sounds!
+    #[asset(path = "sounds/cargo_ship_section_hit.ogg")]
+    pub cargo_ship_section_hit: Handle<AudioSource>,
+    #[asset(path = "sounds/cargo_ship_hyperdrive.ogg")]
+    pub cargo_ship_hyperdrive: Handle<AudioSource>,
+    #[asset(path = "sounds/cargo_ship_laser.ogg")]
+    pub cargo_ship_laser: Handle<AudioSource>,
+    #[asset(path = "sounds/pickup.ogg")]
+    pub pickup: Handle<AudioSource>,
+    #[asset(path = "sounds/pickup_xm.ogg")]
+    pub pickup_xm: Handle<AudioSource>,
+    #[asset(path = "sounds/player_laser.ogg")]
+    pub player_laser: Handle<AudioSource>,
+    #[asset(path = "sounds/player_hyperdrive.ogg")]
+    pub player_hyperdrive: Handle<AudioSource>,
+    #[asset(path = "sounds/player_jammed.ogg")]
+    pub player_jammed: Handle<AudioSource>,
+    #[asset(path = "sounds/upgrade.ogg")]
+    pub upgrade: Handle<AudioSource>,
 }
 
 #[derive(Resource)]

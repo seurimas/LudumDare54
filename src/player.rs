@@ -64,12 +64,14 @@ pub struct Player {
     pub shield_recharge_delay: f32,
     pub shield_recharge_timer: f32,
     pub shield_recharge_rate: f32,
+    pub repair_cost_per_hull: f32,
     // Cargo.
     pub max_cargo: f32,
     pub salvage_mass: f32,
     pub salvage_value: f32,
     pub exotic_material: f32,
-    pub upgrade_material: Option<Upgrade>,
+    pub upgrade_mass: f32,
+    pub upgrade_materials: Vec<Upgrade>,
     // Upgrades
     pub jammer_range_multiplier: f32,
     pub jammer_cost: f32,
@@ -94,11 +96,13 @@ impl Player {
             shield_recharge_delay: 5.0,
             shield_recharge_timer: 0.0,
             shield_recharge_rate: 10.0,
+            repair_cost_per_hull: 5.0,
             max_cargo: 100.0,
             salvage_mass: 0.0,
             salvage_value: 0.0,
             exotic_material: 0.0,
-            upgrade_material: None,
+            upgrade_mass: 0.0,
+            upgrade_materials: Vec::new(),
             jammer_range_multiplier: 1.0,
             jammer_cost: 20.0,
         }
@@ -113,9 +117,12 @@ impl Player {
             }
             Upgrade::ShieldStrength => {
                 self.max_shields *= 1.1;
+                self.shields = self.max_shields;
             }
             Upgrade::HullStrength => {
+                let original = self.max_hull;
                 self.max_hull *= 1.1;
+                self.hull += self.max_hull - original;
             }
             Upgrade::ShieldRecharge => {
                 self.shield_recharge_delay *= 0.9;
@@ -125,13 +132,13 @@ impl Player {
                 self.main_speed *= 0.9;
             }
             Upgrade::JammerRange => {
-                self.jammer_range_multiplier *= 1.1;
+                self.jammer_range_multiplier *= 1.2;
             }
             Upgrade::JammerEfficiency => {
-                if self.jammer_cost <= 1.0 {
+                if self.jammer_cost <= 3.0 {
                     self.jammer_cost *= 0.9;
                 } else {
-                    self.jammer_cost -= 1.0;
+                    self.jammer_cost -= 3.0;
                 }
             }
         }
@@ -147,14 +154,15 @@ impl Player {
     }
 
     pub fn cargo_space_left(&self) -> f32 {
-        (self.max_cargo - self.salvage_mass - self.exotic_material).max(0.)
+        (self.max_cargo - self.salvage_mass - self.exotic_material - self.upgrade_mass).max(0.)
     }
 
     pub fn get_repair_cost(&self) -> f32 {
-        self.max_hull - self.hull
+        (self.max_hull - self.hull) * self.repair_cost_per_hull
     }
 
     pub fn repair(&mut self, amount: f32) {
+        let amount = amount / self.repair_cost_per_hull;
         self.shields = self.max_shields;
         self.hull += amount;
         if self.hull > self.max_hull {
@@ -325,12 +333,17 @@ fn player_laser_fire_system(
     time: Res<Time>,
     mut players: Query<(&mut Player, &Transform, &InertiaVolume, &Spine)>,
     lasers: Res<Lasers>,
+    game_assets: Res<GameAssets>,
     input: Res<Input<MouseButton>>,
 ) {
     for (mut player, location, my_inertia, spine) in players.iter_mut() {
         player.main_cooldown -= time.delta_seconds();
         if input.pressed(MouseButton::Left) {
             if player.main_cooldown <= 0.0 {
+                commands.spawn(AudioBundle {
+                    source: game_assets.player_laser.clone(),
+                    settings: PlaybackSettings::DESPAWN,
+                });
                 player.main_cooldown = player.main_speed;
                 if player.aim_rotation < PI * 5. / 8. && player.aim_rotation > -PI * 5. / 8. {
                     fire_laser_from_turret(

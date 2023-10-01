@@ -142,10 +142,10 @@ pub fn deploy_jammer_system(
     *cooldown -= time.delta_seconds();
     if input.just_pressed(KeyCode::G) && *cooldown <= 0.0 {
         let (mut player, player_transform, mut player_inertia) = player.single_mut();
-        if player.exotic_material < 20. {
+        if player.exotic_material < player.jammer_cost {
             return;
         }
-        player.exotic_material -= 20.;
+        player.exotic_material -= player.jammer_cost;
         let mut transform = Transform::default();
         transform.translation = player_transform.translation;
         let mut inertia = InertiaVolume::new(1.0, 0.0);
@@ -163,7 +163,7 @@ pub fn deploy_jammer_system(
             inertia,
             Regional,
             Jammer {
-                radius: 1000.0,
+                radius: 1000.0 * player.jammer_range_multiplier,
                 progress: 0.0,
             },
         ));

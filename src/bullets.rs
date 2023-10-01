@@ -1,3 +1,5 @@
+use bevy::audio;
+
 use crate::prelude::*;
 
 pub struct BulletsPlugin;
@@ -6,7 +8,10 @@ impl Plugin for BulletsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (cargo_ship_damage_system, player_ship_damage_system),
+            (
+                cargo_ship_damage_system.run_if(not(in_state(GameState::Loading))),
+                player_ship_damage_system,
+            ),
         );
     }
 }
@@ -23,6 +28,7 @@ fn cargo_ship_damage_system(
     player_bullets: Query<(Entity, &Bullet)>,
     cargo_sections: Query<(&Parent, &CargoSection)>,
     mut cargo_ship: Query<(&mut CargoShip, &mut Spine)>,
+    game_assets: Res<GameAssets>,
 ) {
     for collision in collisions.iter() {
         if let Ok((bullet_entity, bullet)) = player_bullets.get(collision.e0) {
@@ -40,6 +46,10 @@ fn cargo_ship_damage_system(
                                     false,
                                 );
                         }
+                        commands.spawn(AudioBundle {
+                            source: game_assets.cargo_ship_section_hit.clone(),
+                            settings: PlaybackSettings::DESPAWN,
+                        });
                         if let Some(mut bullet_entity) = commands.get_entity(bullet_entity) {
                             bullet_entity.despawn();
                         }

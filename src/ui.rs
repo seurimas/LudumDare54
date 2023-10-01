@@ -158,15 +158,15 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
                 position_type: PositionType::Absolute,
                 left: Val::Px(0.),
                 top: Val::Px(170.),
-                width: Val::Px(230.),
-                height: Val::Px(20.),
+                width: Val::Px(400.),
+                height: Val::Px(200.),
                 ..Default::default()
             },
             text: Text::from_section(
                 "Upgrade found:",
                 TextStyle {
                     font: DEFAULT_FONT_HANDLE.typed(),
-                    font_size: 20.,
+                    font_size: 16.,
                     color: Color::WHITE,
                 },
             )
@@ -240,14 +240,6 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
                                 },
                             },
                             TextSection {
-                                value: "XXX".to_string(),
-                                style: TextStyle {
-                                    font: DEFAULT_FONT_HANDLE.typed(),
-                                    font_size: 20.,
-                                    color: Color::WHITE,
-                                },
-                            },
-                            TextSection {
                                 value: "\n10 days left".to_string(),
                                 style: TextStyle {
                                     font: DEFAULT_FONT_HANDLE.typed(),
@@ -310,15 +302,21 @@ fn update_ui(
     // Display cargo!
     const EXOTIC_COLOR: Color = Color::rgba(1.0, 1.0, 0.0, 1.0);
     const SALVAGE_COLOR: Color = Color::rgba(0.5, 0.5, 0.5, 1.0);
+    const UPGRADE_COLOR: Color = Color::rgba(1.0, 1.0, 1.0, 1.0);
     let mut exotic_drawn = 0;
+    let mut upgrades_drawn = 0;
     let mut salvage_drawn = 0;
     let exotics = player.exotic_material.floor() as i32;
+    let upgrades = player.upgrade_mass.ceil() as i32;
     let salvage = player.salvage_mass.ceil() as i32;
     for cell in ui_state.cargo_cells.iter() {
         if let Ok(mut cell_bg) = bg_color.get_mut(*cell) {
             if exotic_drawn < exotics {
                 exotic_drawn += 1;
                 cell_bg.0 = EXOTIC_COLOR;
+            } else if upgrades_drawn < upgrades {
+                upgrades_drawn += 1;
+                cell_bg.0 = UPGRADE_COLOR;
             } else if salvage_drawn < salvage {
                 salvage_drawn += 1;
                 cell_bg.0 = SALVAGE_COLOR;
@@ -328,15 +326,21 @@ fn update_ui(
         }
     }
     if let Ok(mut cargo_text) = text.get_mut(ui_state.cargo_text) {
-        cargo_text.sections[0].value = format!("Cargo: {}/{}", exotics + salvage, CARGO_CELL_COUNT);
+        cargo_text.sections[0].value = format!(
+            "Cargo: {}/{}",
+            exotics + salvage + upgrades,
+            CARGO_CELL_COUNT
+        );
         cargo_text.sections[1].value = format!(" Value: {}", player.salvage_value.floor() as i32);
     }
     if let Ok(mut upgrade_text) = text.get_mut(ui_state.upgrade_text) {
-        if let Some(upgrade) = &player.upgrade_material {
-            upgrade_text.sections[0].value =
-                format!("Upgrade found: {}", upgrade.get_upgrade_material_name());
-        } else {
-            upgrade_text.sections[0].value = "".to_string();
+        upgrade_text.sections[0].value = "".to_string();
+        for upgrade in player.upgrade_materials.iter() {
+            upgrade_text.sections[0].value = format!(
+                "{}\nXM item found: {}",
+                upgrade_text.sections[0].value,
+                upgrade.get_upgrade_material_name()
+            );
         }
     }
 }
