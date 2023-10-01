@@ -10,7 +10,7 @@ impl Plugin for BulletsPlugin {
             Update,
             (
                 cargo_ship_damage_system.run_if(not(in_state(GameState::Loading))),
-                player_ship_damage_system,
+                player_ship_damage_system.run_if(not(in_state(GameState::Loading))),
             ),
         );
     }
@@ -21,6 +21,8 @@ pub enum Bullet {
     Player,
     Enemy,
 }
+
+const PLAYER_DAMAGE: f32 = 5.0;
 
 fn cargo_ship_damage_system(
     mut commands: Commands,
@@ -53,7 +55,7 @@ fn cargo_ship_damage_system(
                         if let Some(mut bullet_entity) = commands.get_entity(bullet_entity) {
                             bullet_entity.despawn();
                         }
-                        cargo_ship.damage_section(cargo_section.index, 10.0);
+                        cargo_ship.damage_section(cargo_section.index, PLAYER_DAMAGE);
                     }
                 }
             }
@@ -61,11 +63,14 @@ fn cargo_ship_damage_system(
     }
 }
 
+const ENEMY_DAMAGE: f32 = 5.0;
+
 fn player_ship_damage_system(
     mut commands: Commands,
     mut collisions: EventReader<Collision>,
     enemy_bullets: Query<(Entity, &Bullet)>,
     mut players: Query<(&mut Player, &mut Spine)>,
+    game_assets: Res<GameAssets>,
 ) {
     for collision in collisions.iter() {
         if let Ok((bullet_entity, bullet)) = enemy_bullets.get(collision.e0) {
@@ -79,7 +84,18 @@ fn player_ship_damage_system(
                     if let Some(mut bullet_entity) = commands.get_entity(bullet_entity) {
                         bullet_entity.despawn();
                     }
-                    player.take_damage(5.);
+                    if player.shields > 0. {
+                        commands.spawn(AudioBundle {
+                            source: game_assets.player_shield_hit.clone(),
+                            settings: PlaybackSettings::DESPAWN,
+                        });
+                    } else {
+                        commands.spawn(AudioBundle {
+                            source: game_assets.player_hull_hit.clone(),
+                            settings: PlaybackSettings::DESPAWN,
+                        });
+                    }
+                    player.take_damage(ENEMY_DAMAGE);
                 }
             }
         }

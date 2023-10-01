@@ -50,6 +50,8 @@ pub struct GameAssets {
     // Sounds!
     #[asset(path = "sounds/cargo_ship_section_hit.ogg")]
     pub cargo_ship_section_hit: Handle<AudioSource>,
+    #[asset(path = "sounds/cargo_ship_section_destroyed.ogg")]
+    pub cargo_ship_section_destroyed: Handle<AudioSource>,
     #[asset(path = "sounds/cargo_ship_hyperdrive.ogg")]
     pub cargo_ship_hyperdrive: Handle<AudioSource>,
     #[asset(path = "sounds/cargo_ship_laser.ogg")]
@@ -58,6 +60,12 @@ pub struct GameAssets {
     pub pickup: Handle<AudioSource>,
     #[asset(path = "sounds/pickup_xm.ogg")]
     pub pickup_xm: Handle<AudioSource>,
+    #[asset(path = "sounds/player_shield_hit.ogg")]
+    pub player_shield_hit: Handle<AudioSource>,
+    #[asset(path = "sounds/player_hull_hit.ogg")]
+    pub player_hull_hit: Handle<AudioSource>,
+    #[asset(path = "sounds/player_destroyed.ogg")]
+    pub player_destroyed: Handle<AudioSource>,
     #[asset(path = "sounds/player_laser.ogg")]
     pub player_laser: Handle<AudioSource>,
     #[asset(path = "sounds/player_hyperdrive.ogg")]

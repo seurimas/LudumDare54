@@ -148,6 +148,9 @@ impl Player {
         self.shield_recharge_timer = self.shield_recharge_delay;
         if self.shields > 0.0 {
             self.shields -= amount;
+            if self.shields < 0.0 {
+                self.shields = 0.0;
+            }
         } else {
             self.hull -= amount;
         }

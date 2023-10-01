@@ -12,18 +12,20 @@ enum CargoShipEscape {
 pub struct CargoShip {
     aggressed: bool,
     sections_health: [f32; 8],
-    sections_destroyed: [bool; 8],
+    pub sections_destroyed: [bool; 8],
     fire_speed: f32,
     turret_cooldowns: [f32; 2],
     escape_state: CargoShipEscape,
     jump_time: f32,
 }
 
+const CARGO_SHIP_SECTION_HEALTH: f32 = 200.0;
+
 impl CargoShip {
     pub fn new() -> Self {
         Self {
             aggressed: false,
-            sections_health: [100.0; 8],
+            sections_health: [CARGO_SHIP_SECTION_HEALTH; 8],
             sections_destroyed: [false; 8],
             fire_speed: 1.,
             turret_cooldowns: [0.0; 2],
@@ -180,12 +182,19 @@ pub fn cargo_ship_jet_animation_system(mut players: Query<(&CargoShip, &mut Spin
 pub fn cargo_ship_drop_system(
     mut commands: Commands,
     game_assets: Res<GameAssets>,
-    mut cargo_ships: Query<(Entity, &CargoShip, &mut InertiaVolume, &mut Spine)>,
+    mut cargo_ships: Query<(Entity, &mut CargoShip, &mut InertiaVolume, &mut Spine)>,
     cargo_sections: Query<(Entity, &CargoSection, &Parent, &GlobalTransform)>,
 ) {
-    for (ship_entity, cargo_ship, mut ship_inertia, mut cargo_skeleton) in cargo_ships.iter_mut() {
+    for (ship_entity, mut cargo_ship, mut ship_inertia, mut cargo_skeleton) in
+        cargo_ships.iter_mut()
+    {
         for section_idx in 0..8 {
             if cargo_ship.section_must_die(section_idx) {
+                cargo_ship.sections_destroyed[section_idx] = true;
+                commands.spawn(AudioBundle {
+                    source: game_assets.cargo_ship_section_destroyed.clone(),
+                    settings: PlaybackSettings::DESPAWN,
+                });
                 // Pinata!
                 if let Some((ship_section, section, _parent, transform)) = cargo_sections
                     .iter()
@@ -208,20 +217,18 @@ pub fn cargo_ship_drop_system(
                             rand::random::<f32>() * 20.0 + 10.0,
                         );
                     }
-                    for _ in 0..2 {
-                        spawn_upgrade(
-                            transform.translation().x,
-                            transform.translation().y,
-                            ship_inertia.velocity
-                                + Quat::from_rotation_z(rand::random::<f32>() * PI * 2.)
-                                    .mul_vec3(Vec3::X)
-                                    .truncate()
-                                    * (rand::random::<f32>() * 100.0),
-                            &mut commands,
-                            game_assets.upgrades.clone(),
-                            Upgrade::random(),
-                        );
-                    }
+                    spawn_upgrade(
+                        transform.translation().x,
+                        transform.translation().y,
+                        ship_inertia.velocity
+                            + Quat::from_rotation_z(rand::random::<f32>() * PI * 2.)
+                                .mul_vec3(Vec3::X)
+                                .truncate()
+                                * (rand::random::<f32>() * 200.0),
+                        &mut commands,
+                        game_assets.upgrades.clone(),
+                        Upgrade::random(),
+                    );
                     ship_inertia.mass -= CARGO_SECTION_MASS;
                     commands.entity(ship_section).despawn();
                     if let Some(mut section_bone) =
