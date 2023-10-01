@@ -1,3 +1,5 @@
+use bevy::sprite::MaterialMesh2dBundle;
+
 use crate::prelude::*;
 
 #[derive(Component)]
@@ -9,6 +11,38 @@ pub struct Jammed;
 #[derive(Component)]
 pub struct Jammer {
     pub radius: f32,
+    pub progress: f32,
+}
+
+const JAMMER_SPAWN_SPEED_PER_R_SQ: f32 = 1000. / (1_000. * 1_000.);
+const JAMMER_VELOCITY_SCALE: f32 = 100.0;
+
+#[derive(Component)]
+pub struct JammerPixel {
+    pub lifetime: f32,
+    pub velocity: Vec2,
+    pub acceleration: Vec2,
+}
+
+impl JammerPixel {
+    pub fn random() -> Self {
+        let mut rng = rand::thread_rng();
+        let lifetime = rng.gen_range(0.0..1.0);
+        let vel_range = -JAMMER_VELOCITY_SCALE..JAMMER_VELOCITY_SCALE;
+        let velocity = Vec2::new(
+            rng.gen_range(vel_range.clone()),
+            rng.gen_range(vel_range.clone()),
+        );
+        let acceleration = Vec2::new(
+            rng.gen_range(vel_range.clone()),
+            rng.gen_range(vel_range.clone()),
+        );
+        Self {
+            lifetime,
+            velocity,
+            acceleration,
+        }
+    }
 }
 
 pub fn insert_jammed_around_jammer_system(
@@ -23,13 +57,13 @@ pub fn insert_jammed_around_jammer_system(
         .iter()
         .map(|(entity, transform)| (entity, transform.translation))
         .collect::<Vec<_>>();
-    for (jammer_transform, jammer) in queries.p1().iter() {
-        for (jammed_entity, jammed_location) in &jammables {
-            if jammer_transform.translation.distance(*jammed_location) < jammer.radius {
-                commands.entity(*jammed_entity).insert(Jammed);
-            } else {
-                commands.entity(*jammed_entity).remove::<Jammed>();
-            }
+    for (jammed_entity, jammed_location) in &jammables {
+        if queries.p1().iter().any(|(transform, jammer)| {
+            transform.translation.distance(*jammed_location) < jammer.radius
+        }) {
+            commands.entity(*jammed_entity).insert(Jammed);
+        } else {
+            commands.entity(*jammed_entity).remove::<Jammed>();
         }
     }
 }
@@ -69,6 +103,58 @@ pub fn indicate_jamming_on_skeleton(
             if let Some(mut right) = spine.skeleton.find_slot_mut("hyperdrive_right") {
                 toggle_hyperdrive_enabled(right, true, *pulsing);
             }
+        }
+    }
+}
+
+pub fn generate_jamming_pixels(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut jammers: Query<(&mut Jammer, &Transform)>,
+    lasers: Res<Lasers>,
+) {
+    let mut rng = rand::thread_rng();
+    let dt = time.delta_seconds();
+    for (mut jammer, transform) in jammers.iter_mut() {
+        let center = transform.translation;
+        let R_sq = jammer.radius * jammer.radius;
+        let spawned_pixel_count = R_sq * jammer.progress * JAMMER_SPAWN_SPEED_PER_R_SQ;
+        jammer.progress += dt;
+        let new_spawned_pixel_count = R_sq * jammer.progress * JAMMER_SPAWN_SPEED_PER_R_SQ;
+        let new_pixels = (new_spawned_pixel_count - spawned_pixel_count).floor() as i32;
+        for _ in 0..(new_pixels.min(1000)) {
+            let r_sq: f32 = rng.gen_range(0.0..1.0);
+            let r = jammer.radius * r_sq.sqrt();
+            let theta = rng.gen_range(0.0..2.0 * PI);
+            let mut transform = Transform::default();
+            transform.translation = center + Vec3::new(r * theta.cos(), r * theta.sin(), 0.0);
+            commands.spawn((
+                MaterialMesh2dBundle {
+                    transform,
+                    mesh: lasers.jammer_mesh.clone().into(),
+                    material: lasers.jammer_material.clone(),
+                    ..Default::default()
+                },
+                JammerPixel::random(),
+            ));
+        }
+    }
+}
+
+pub fn update_jamming_pixels(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut jammer_pixels: Query<(Entity, &mut JammerPixel, &mut Transform)>,
+) {
+    let dt = time.delta_seconds();
+    for (entity, mut jammer_pixel, mut transform) in jammer_pixels.iter_mut() {
+        jammer_pixel.lifetime -= dt;
+        if jammer_pixel.lifetime < 0.0 {
+            commands.entity(entity).despawn();
+        } else {
+            let delta_v = jammer_pixel.acceleration * dt;
+            jammer_pixel.velocity += delta_v;
+            transform.translation += jammer_pixel.velocity.extend(0.0) * dt;
         }
     }
 }

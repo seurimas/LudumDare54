@@ -68,7 +68,6 @@ impl InertiaVolume {
         let rotation = self.rotation + rotation_offset;
         let thrust_vector = Vec2::new(rotation.cos(), rotation.sin());
         let current_forward_speed = self.velocity.dot(thrust_vector);
-        println!("{} {}", current_forward_speed, self.velocity);
         if force_length > 0.0 && current_forward_speed >= limit {
             return;
         } else if force_length < 0.0 && current_forward_speed <= -limit {

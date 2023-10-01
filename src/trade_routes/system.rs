@@ -50,7 +50,10 @@ pub fn spawn_starting_system(mut commands: Commands, game_assets: Res<GameAssets
     }
     commands.spawn((
         TransformBundle::default(),
-        Jammer { radius: 100.0 },
+        Jammer {
+            radius: 1000.0,
+            progress: 0.,
+        },
         Regional,
     ));
 }
@@ -191,10 +194,7 @@ pub fn engage_hyperdrive_system(
     if input.just_pressed(KeyCode::Space) && *cooldown <= 0.0 {
         let (player, mut player_inertia) = player.single_mut();
         if player_inertia.forward_speed() < HYPERDRIVE_SPEED {
-            println!(
-                "Only {}m/s, not fast enough!",
-                player_inertia.forward_speed()
-            );
+            // TODO: Indicate failure.
             return;
         }
         if let Some(_hyperdrive_target) = player.hyperdrive_target {

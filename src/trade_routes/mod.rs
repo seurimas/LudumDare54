@@ -17,6 +17,8 @@ impl Plugin for TradeRoutesPlugin {
             .add_systems(
                 Update,
                 (
+                    update_jamming_pixels,
+                    generate_jamming_pixels.run_if(in_state(GameState::Playing)),
                     insert_jammed_around_jammer_system,
                     indicate_jamming_on_skeleton,
                     update_system_indicators.run_if(in_state(GameState::Playing)),

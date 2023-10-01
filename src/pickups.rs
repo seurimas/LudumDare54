@@ -38,6 +38,10 @@ pub fn spawn_exotic(
         },
         InertiaVolume::new(1.0, 16.0),
         Pickup::ExoticMaterial(value),
+        Jammer {
+            radius: rand::thread_rng().gen_range(100.0..200.0),
+            progress: 0.0,
+        },
     ));
 }
 
