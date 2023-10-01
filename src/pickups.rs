@@ -38,8 +38,9 @@ pub fn spawn_exotic(
         },
         InertiaVolume::new(1.0, 16.0),
         Pickup::ExoticMaterial(value),
+        Regional,
         Jammer {
-            radius: rand::thread_rng().gen_range(100.0..200.0),
+            radius: rand::thread_rng().gen_range(1000.0..1500.0),
             progress: 0.0,
         },
     ));
@@ -66,6 +67,7 @@ pub fn spawn_salvage(
             },
             ..Default::default()
         },
+        Regional,
         inertia_volume,
         Pickup::Salvage(value),
     ));

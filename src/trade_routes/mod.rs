@@ -1,12 +1,11 @@
 use crate::prelude::*;
 
 pub const ARENA_SIZE: f32 = 1000.0;
+pub const HYPERDRIVE_SPEED: f32 = 500.0;
 
 mod cargo_ships;
-mod jamming;
 mod system;
 pub use cargo_ships::*;
-pub use jamming::*;
 pub use system::*;
 
 pub struct TradeRoutesPlugin;
@@ -17,10 +16,6 @@ impl Plugin for TradeRoutesPlugin {
             .add_systems(
                 Update,
                 (
-                    update_jamming_pixels,
-                    generate_jamming_pixels.run_if(in_state(GameState::Playing)),
-                    insert_jammed_around_jammer_system,
-                    indicate_jamming_on_skeleton,
                     update_system_indicators.run_if(in_state(GameState::Playing)),
                     pick_hyperdrive_target.run_if(in_state(GameState::Playing)),
                     engage_hyperdrive_system.run_if(in_state(GameState::Playing)),

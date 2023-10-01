@@ -2,6 +2,23 @@ use bevy::sprite::MaterialMesh2dBundle;
 
 use crate::prelude::*;
 
+pub struct JammingPlugin;
+
+impl Plugin for JammingPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            Update,
+            (
+                deploy_jammer_system.run_if(in_state(GameState::Playing)),
+                update_jamming_pixels,
+                generate_jamming_pixels.run_if(in_state(GameState::Playing)),
+                insert_jammed_around_jammer_system,
+                indicate_jamming_on_skeleton,
+            ),
+        );
+    }
+}
+
 #[derive(Component)]
 pub struct Jammable;
 
@@ -156,5 +173,40 @@ pub fn update_jamming_pixels(
             jammer_pixel.velocity += delta_v;
             transform.translation += jammer_pixel.velocity.extend(0.0) * dt;
         }
+    }
+}
+
+pub fn deploy_jammer_system(
+    mut cooldown: Local<f32>,
+    time: Res<Time>,
+    mut commands: Commands,
+    mut player: Query<(&Player, &Transform, &mut InertiaVolume)>,
+    input: Res<Input<KeyCode>>,
+    game_assets: Res<GameAssets>,
+) {
+    *cooldown -= time.delta_seconds();
+    if input.just_pressed(KeyCode::G) && *cooldown <= 0.0 {
+        let (_player, player_transform, mut player_inertia) = player.single_mut();
+        let mut transform = Transform::default();
+        transform.translation = player_transform.translation;
+        let mut inertia = InertiaVolume::new(1.0, 0.0);
+        inertia.velocity = player_inertia.velocity;
+        commands.spawn((
+            SpriteBundle {
+                texture: game_assets.jammer.clone(),
+                transform,
+                sprite: Sprite {
+                    color: Color::rgba(10., 10., 0., 1.),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            inertia,
+            Regional,
+            Jammer {
+                radius: 1000.0,
+                progress: 0.0,
+            },
+        ));
     }
 }

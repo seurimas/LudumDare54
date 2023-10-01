@@ -48,14 +48,6 @@ pub fn spawn_starting_system(mut commands: Commands, game_assets: Res<GameAssets
             1,
         );
     }
-    commands.spawn((
-        TransformBundle::default(),
-        Jammer {
-            radius: 1000.0,
-            progress: 0.,
-        },
-        Regional,
-    ));
 }
 
 fn spawn_asteroids_in_system(

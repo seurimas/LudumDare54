@@ -2,6 +2,7 @@ mod assets;
 mod bullets;
 mod game_state;
 mod indicators;
+mod jamming;
 mod physics;
 mod pickups;
 mod player;
@@ -15,6 +16,7 @@ use assets::GameAssetsPlugin;
 use bevy_spine::SpinePlugin;
 use bullets::BulletsPlugin;
 use indicators::IndicatorsPlugin;
+use jamming::JammingPlugin;
 use physics::PhysicsPlugin;
 use pickups::PickupsPlugin;
 use player::PlayerPlugin;
@@ -29,6 +31,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins((
             SpinePlugin,
+            JammingPlugin,
             BulletsPlugin,
             TradeRoutesPlugin,
             IndicatorsPlugin,

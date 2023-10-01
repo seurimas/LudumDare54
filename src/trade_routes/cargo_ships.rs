@@ -1,5 +1,13 @@
 use crate::prelude::*;
 
+#[derive(PartialEq, Debug)]
+enum CargoShipEscape {
+    Passive,
+    Jammed,
+    Jumping { progress: f32 },
+    Jumped { progress: f32 },
+}
+
 #[derive(Component)]
 pub struct CargoShip {
     aggressed: bool,
@@ -7,6 +15,8 @@ pub struct CargoShip {
     sections_destroyed: [bool; 8],
     fire_speed: f32,
     turret_cooldowns: [f32; 2],
+    escape_state: CargoShipEscape,
+    jump_time: f32,
 }
 
 impl CargoShip {
@@ -17,6 +27,8 @@ impl CargoShip {
             sections_destroyed: [false; 8],
             fire_speed: 2.,
             turret_cooldowns: [0.0; 2],
+            escape_state: CargoShipEscape::Passive,
+            jump_time: 3.0,
         }
     }
 
@@ -142,18 +154,6 @@ pub fn cargo_ship_jet_animation_system(mut players: Query<(&CargoShip, &mut Spin
     }
 }
 
-pub fn cargo_ship_escape_system(
-    time: Res<Time>,
-    mut cargo_ships: Query<(&CargoShip, &mut InertiaVolume)>,
-) {
-    let dt = time.delta_seconds();
-    for (cargo_ship, mut inertia) in cargo_ships.iter_mut() {
-        if cargo_ship.aggressed {
-            inertia.apply_thrust_force(CARGO_SHIP_THRUST, dt);
-        }
-    }
-}
-
 pub fn cargo_ship_drop_system(
     mut commands: Commands,
     game_assets: Res<GameAssets>,
@@ -200,6 +200,60 @@ pub fn cargo_ship_drop_system(
 
 const CARGO_SHIP_LASER_SPEED: f32 = 500.0;
 const CARGO_SHIP_LASER_DISTANCE_SQ: f32 = 1000.0 * 1000.0;
+
+pub fn cargo_ship_escape_system(
+    time: Res<Time>,
+    mut cargo_ships: Query<(Entity, &mut CargoShip, &mut InertiaVolume, Option<&Jammed>)>,
+    mut commands: Commands,
+) {
+    let dt = time.delta_seconds();
+    for (cargo_entity, mut cargo_ship, mut inertia, m_jammed) in cargo_ships.iter_mut() {
+        if cargo_ship.aggressed && cargo_ship.escape_state == CargoShipEscape::Passive {
+            cargo_ship.escape_state = if m_jammed.is_some() {
+                CargoShipEscape::Jammed
+            } else {
+                CargoShipEscape::Jumping { progress: 0.0 }
+            };
+        }
+        println!("{:?}", cargo_ship.escape_state);
+        match cargo_ship.escape_state {
+            CargoShipEscape::Jumping { progress } => {
+                if m_jammed.is_some() {
+                    cargo_ship.escape_state = CargoShipEscape::Jammed;
+                } else {
+                    inertia.apply_thrust_force(CARGO_SHIP_THRUST, dt);
+                    if progress > cargo_ship.jump_time {
+                        cargo_ship.escape_state = CargoShipEscape::Jumped { progress: 0.0 };
+                    } else {
+                        cargo_ship.escape_state = CargoShipEscape::Jumping {
+                            progress: progress + dt,
+                        };
+                    }
+                }
+            }
+            CargoShipEscape::Jumped { progress } => {
+                inertia.set_forward_speed(HYPERDRIVE_SPEED * 2.0);
+                if progress > 1. {
+                    commands.entity(cargo_entity).despawn_recursive();
+                } else {
+                    cargo_ship.escape_state = CargoShipEscape::Jumped {
+                        progress: progress + dt,
+                    };
+                }
+            }
+            CargoShipEscape::Jammed => {
+                if m_jammed.is_none() {
+                    cargo_ship.escape_state = CargoShipEscape::Jumping { progress: 0.0 };
+                } else {
+                    inertia.apply_thrust_force(CARGO_SHIP_THRUST, dt);
+                }
+            }
+            CargoShipEscape::Passive => {
+                // Much ado about nothing.
+            }
+        }
+    }
+}
 
 pub fn cargo_ship_defense_system(
     time: Res<Time>,
