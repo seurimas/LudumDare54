@@ -2,7 +2,7 @@ use bevy::ui::widget::UiImageSize;
 
 use crate::{game_state, prelude::*};
 
-const INDICATOR_DISTANCE: f32 = 300.0;
+const INDICATOR_DISTANCE: f32 = 200.0;
 const INDICATOR_TEXT_OFFSET: f32 = 20.0;
 
 pub struct IndicatorsPlugin;
@@ -90,6 +90,7 @@ pub fn create_indicator_with_text(
             } else {
                 game_assets.indicator.clone()
             }),
+            z_index: ZIndex::Global(10),
             style: Style {
                 position_type: PositionType::Absolute,
                 width: if regional {

@@ -283,7 +283,7 @@ pub fn cargo_ship_drop_system(
 }
 
 const CARGO_SHIP_LASER_SPEED: f32 = 500.0;
-const CARGO_SHIP_LASER_DISTANCE_SQ: f32 = 1000.0 * 1000.0;
+const CARGO_SHIP_LASER_DISTANCE_SQ: f32 = 600.0 * 600.0;
 
 pub fn cargo_ship_escape_system(
     time: Res<Time>,
