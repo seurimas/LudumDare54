@@ -31,7 +31,7 @@ impl Default for Career {
             earnings: 0.0,
             last_repair_costs: 0.0,
             last_upgrades: Vec::new(),
-            days_survived: 0,
+            days_survived: 9,
             intro_stage: 0,
         }
     }
@@ -66,6 +66,9 @@ fn handle_go_home(
     mut commands: Commands,
     game_assets: Res<GameAssets>,
 ) {
+    if players.is_empty() {
+        return;
+    }
     let mut player = players.single_mut();
     career.earnings += player.salvage_value;
     player.salvage_mass = 0.0;

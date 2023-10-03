@@ -22,6 +22,20 @@ impl Plugin for PlayerPlugin {
             spawn_player,
         )
         .add_systems(
+            OnTransition {
+                from: GameState::Retire,
+                to: GameState::Playing,
+            },
+            spawn_player,
+        )
+        .add_systems(
+            OnTransition {
+                from: GameState::GameOver,
+                to: GameState::Playing,
+            },
+            spawn_player,
+        )
+        .add_systems(
             PostUpdate,
             player_camera_system
                 .before(TransformSystem::TransformPropagate)
@@ -306,6 +320,9 @@ fn player_laser_aim_system(
     mut players: Query<(&mut Player, &Transform, &InertiaVolume, &mut Spine)>,
     mut cursor_moved_events: EventReader<CursorMoved>,
 ) {
+    if camera.is_empty() || players.is_empty() {
+        return;
+    }
     let (camera, camera_transform) = camera.single();
     if let Some(cursor_moved_event) = cursor_moved_events.iter().last() {
         *mouse_location = cursor_moved_event.position;

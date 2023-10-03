@@ -105,6 +105,9 @@ pub fn pick_hyperdrive_target(
     mut player: Query<(&mut Player, &InertiaVolume)>,
     mut indicators: Query<(Entity, &DistantIndicator), Without<CurrentSystemRegion>>,
 ) {
+    if player.is_empty() {
+        return;
+    }
     let mut min_distance = f32::MAX;
     let mut hyperdrive_target = None;
     let player_facing = player.single().1.rotation();
@@ -141,6 +144,9 @@ pub fn update_system_indicators(
     )>,
     mut indicator_texts: Query<&mut Text>,
 ) {
+    if player.is_empty() {
+        return;
+    }
     let hyperdrive_target = player.single().0.hyperdrive_target;
     let player_location = player.single().1.location;
     let mut sorted_indicators = indicators
@@ -208,6 +214,9 @@ pub fn engage_hyperdrive_system(
     input: Res<Input<KeyCode>>,
     game_assets: Res<GameAssets>,
 ) {
+    if player.is_empty() {
+        return;
+    }
     *cooldown -= time.delta_seconds();
     if input.just_pressed(KeyCode::Space) && *cooldown <= 0.0 {
         let (player, mut player_inertia, m_jammed) = player.single_mut();
@@ -274,6 +283,9 @@ pub fn initialize_local_region(
 ) {
     if *timeout == 0. {
         *timeout = 5.;
+    }
+    if player.is_empty() {
+        return;
     }
     if *timeout > 0. && *timeout < time.delta_seconds() {
         // Initialize the area!

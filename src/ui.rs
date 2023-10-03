@@ -322,7 +322,12 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
     // End home text.
     let game_over_text = spawn_centered_text(
         &mut commands,
-        vec!["GAME OVER".to_string(), "".to_string(), "".to_string()],
+        vec![
+            "GAME OVER".to_string(),
+            "".to_string(),
+            "".to_string(),
+            "\n\nPress [ESC] to play again.".to_string(),
+        ],
         40.,
         Color::RED,
     );
@@ -332,6 +337,7 @@ fn setup_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
             "Happy retirement!\n\n".to_string(),
             "".to_string(),
             "".to_string(),
+            "\n\nPress [ESC] to play again.".to_string(),
         ],
         40.,
         Color::YELLOW_GREEN,
@@ -399,6 +405,9 @@ fn update_ui(
     mut text: Query<&mut Text>,
     player: Query<(&Player, &InertiaVolume, Option<&Jammed>)>,
 ) {
+    if player.is_empty() {
+        return;
+    }
     let (player, player_inertia, m_player_jammed) = player.single();
     // Display health!
     if let Ok(mut shield_text) = text.get_mut(ui_state.shield_display) {

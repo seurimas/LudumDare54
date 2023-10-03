@@ -365,6 +365,9 @@ pub fn cargo_ship_defense_system(
     lasers: Res<Lasers>,
     game_assets: Res<GameAssets>,
 ) {
+    if players.is_empty() {
+        return;
+    }
     let player_position = players.single().1.translation;
     let player_velocity = players.single().2.velocity;
     for (mut cargo_ship, location, inertia, mut spine) in cargo_ships.iter_mut() {

@@ -1,4 +1,4 @@
-use crate::{home::Career, prelude::*, ui::UiState};
+use crate::{home::Career, prelude::*, trade_routes::spawn_starting_system, ui::UiState};
 
 pub struct GameOverPlugin;
 
@@ -11,6 +11,8 @@ impl Plugin for GameOverPlugin {
                 check_player_retire_system.run_if(not(in_state(GameState::Loading))),
                 update_game_over_text.run_if(in_state(GameState::GameOver)),
                 update_retirement_text.run_if(in_state(GameState::Retire)),
+                play_again_system.run_if(in_state(GameState::GameOver)),
+                play_again_system.run_if(in_state(GameState::Retire)),
             ),
         );
     }
@@ -21,7 +23,10 @@ fn check_player_death_system(
     current_game_state: Res<State<GameState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
 ) {
-    if player.single().0.is_dead() && *current_game_state == GameState::Playing {
+    if !player.is_empty()
+        && player.single().0.is_dead()
+        && *current_game_state == GameState::Playing
+    {
         next_game_state.set(GameState::GameOver);
         player.single_mut().1.scale = Vec3::ZERO;
     }
@@ -79,5 +84,32 @@ fn update_retirement_text(
                 "Your meager winnings are quickly spent.\nThe authorities catch up to you and you are sent to a penal colony."
             );
         }
+    }
+}
+
+fn play_again_system(
+    mut commands: Commands,
+    despawned: Query<
+        Entity,
+        Or<(
+            With<Player>,
+            With<Regional>,
+            With<SystemLocation>,
+            With<Camera2d>,
+        )>,
+    >,
+    mut career: ResMut<Career>,
+    mut next_game_state: ResMut<NextState<GameState>>,
+    input: Res<Input<KeyCode>>,
+    game_assets: Res<GameAssets>,
+) {
+    if input.pressed(KeyCode::Escape) {
+        next_game_state.set(GameState::Playing);
+        for entity in despawned.iter() {
+            commands.entity(entity).despawn_recursive();
+        }
+        spawn_starting_system(commands, game_assets);
+        *career = Career::default();
+        career.intro_stage = 1000;
     }
 }

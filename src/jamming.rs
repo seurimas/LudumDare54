@@ -139,6 +139,9 @@ pub fn deploy_jammer_system(
     input: Res<Input<KeyCode>>,
     game_assets: Res<GameAssets>,
 ) {
+    if player.is_empty() {
+        return;
+    }
     *cooldown -= time.delta_seconds();
     if input.just_pressed(KeyCode::G) && *cooldown <= 0.0 {
         let (mut player, player_transform, mut player_inertia) = player.single_mut();

@@ -65,8 +65,8 @@ impl Upgrade {
             Upgrade::HullStrength => 3,
             Upgrade::FireSpeed => 4,
             // Upgrade::FirePower => 5,
-            Upgrade::JammerRange => 6,
-            Upgrade::JammerEfficiency => 7,
+            Upgrade::JammerRange => 5,
+            Upgrade::JammerEfficiency => 6,
         }
     }
 

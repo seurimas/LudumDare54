@@ -18,6 +18,7 @@ mod ui;
 #[macro_use]
 extern crate lazy_static;
 use assets::GameAssetsPlugin;
+use bevy::window::WindowResolution;
 use bevy_spine::SpinePlugin;
 use bullets::BulletsPlugin;
 use game_over::GameOverPlugin;
@@ -38,7 +39,14 @@ fn main() {
     App::new()
         .insert_resource(ClearColor(Color::DARK_GRAY))
         .add_state::<GameState>()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "Space Piracy 2444".to_string(),
+                resolution: WindowResolution::new(948., 533.),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }))
         .add_plugins((
             SpinePlugin,
             GameOverPlugin,

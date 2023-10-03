@@ -24,7 +24,7 @@ fn update_intro_text(
     pickups: Query<&Pickup>,
     jammers: Query<&Jammer>,
 ) {
-    if career.intro_complete() {
+    if career.intro_complete() || players.is_empty() {
         return;
     }
     if let Ok(mut text) = texts.get_mut(ui_state.central_text) {

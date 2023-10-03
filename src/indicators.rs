@@ -141,6 +141,9 @@ fn display_indicator_system(
         )>,
     )>,
 ) {
+    if queries.p0().is_empty() {
+        return;
+    }
     let camera_translation = queries.p0().single().translation;
     let window_size = &windows.single().resolution;
     let indicator_directions = queries
