@@ -31,7 +31,7 @@ impl Default for Career {
             earnings: 0.0,
             last_repair_costs: 0.0,
             last_upgrades: Vec::new(),
-            days_survived: 9,
+            days_survived: 0,
             intro_stage: 0,
         }
     }
