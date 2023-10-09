@@ -416,7 +416,7 @@ const JET_BLUENESS: f32 = 24.0;
 const JET_BRIGHTNESS: f32 = 10.0;
 const JET_ACTIVATION_LIMIT: f32 = 10.0;
 
-fn toggle_jet(mut jet: CTmpMut<Skeleton, Slot>, on: bool) {
+pub fn toggle_player_jet(mut jet: CTmpMut<Skeleton, Slot>, on: bool) {
     if on {
         jet.color_mut().a = JET_BRIGHTNESS;
         jet.color_mut().b = JET_BLUENESS;
@@ -429,22 +429,22 @@ fn player_jet_animation_system(mut players: Query<(&Player, &mut Spine)>) {
     for (player, mut spine) in players.iter_mut() {
         let Spine(SkeletonController { skeleton, .. }) = &mut *spine;
         if let Some(left_brake) = skeleton.find_slot_mut("left_maneuver") {
-            toggle_jet(left_brake, player.side_braking < -JET_ACTIVATION_LIMIT);
+            toggle_player_jet(left_brake, player.side_braking < -JET_ACTIVATION_LIMIT);
         }
         if let Some(right_brake) = skeleton.find_slot_mut("right_maneuver") {
-            toggle_jet(right_brake, player.side_braking > JET_ACTIVATION_LIMIT);
+            toggle_player_jet(right_brake, player.side_braking > JET_ACTIVATION_LIMIT);
         }
         if let Some(left_jet) = skeleton.find_slot_mut("left_jet") {
-            toggle_jet(left_jet, player.thrust > JET_ACTIVATION_LIMIT);
+            toggle_player_jet(left_jet, player.thrust > JET_ACTIVATION_LIMIT);
         }
         if let Some(right_jet) = skeleton.find_slot_mut("right_jet") {
-            toggle_jet(right_jet, player.thrust > JET_ACTIVATION_LIMIT);
+            toggle_player_jet(right_jet, player.thrust > JET_ACTIVATION_LIMIT);
         }
         if let Some(left_reverse_jet) = skeleton.find_slot_mut("left_reverse_jet") {
-            toggle_jet(left_reverse_jet, player.thrust < -JET_ACTIVATION_LIMIT);
+            toggle_player_jet(left_reverse_jet, player.thrust < -JET_ACTIVATION_LIMIT);
         }
         if let Some(right_reverse_jet) = skeleton.find_slot_mut("right_reverse_jet") {
-            toggle_jet(right_reverse_jet, player.thrust < -JET_ACTIVATION_LIMIT);
+            toggle_player_jet(right_reverse_jet, player.thrust < -JET_ACTIVATION_LIMIT);
         }
     }
 }

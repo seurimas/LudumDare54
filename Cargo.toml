@@ -25,3 +25,11 @@ opt-level = 3
 
 [profile.dev.package.bevy_rapier3d]
 opt-level = 3
+
+[[bin]]
+name = "game"
+path = "src/game.rs"
+
+[[bin]]
+name = "stager"
+path = "src/stager.rs"

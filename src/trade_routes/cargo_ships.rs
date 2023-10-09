@@ -81,7 +81,7 @@ const CARGO_SHIP_MASS: f32 = CARGO_SECTION_MASS * 8.0 + 2000.0;
 const SECTION_BONES: [&'static str; 8] = [
     "cargo0", "cargo1", "cargo2", "cargo3", "cargo4", "cargo5", "cargo6", "cargo7",
 ];
-const SECTION_DAMAGE_SLOTS: [&'static str; 8] = [
+pub const SECTION_DAMAGE_SLOTS: [&'static str; 8] = [
     "cargo0_damage",
     "cargo1_damage",
     "cargo2_damage",
@@ -91,8 +91,8 @@ const SECTION_DAMAGE_SLOTS: [&'static str; 8] = [
     "cargo6_damage",
     "cargo7_damage",
 ];
-const DAMAGE_ATTACHMENTS: [&'static str; 3] = ["Damage0", "Damage1", "Damage2"];
-const SECTION_HIT_ANIMATIONS: [&'static str; 8] = [
+pub const DAMAGE_ATTACHMENTS: [&'static str; 3] = ["Damage0", "Damage1", "Damage2"];
+pub const SECTION_HIT_ANIMATIONS: [&'static str; 8] = [
     "jiggle0", "jiggle1", "jiggle2", "jiggle3", "jiggle4", "jiggle5", "jiggle6", "jiggle7",
 ];
 const SECTION_OFFSETS: [(f32, f32); 8] = [
@@ -176,10 +176,10 @@ pub fn spawn_cargo_ships(
     }
 }
 
-const JET_GREENNESS: f32 = 24.0;
-const JET_BRIGHTNESS: f32 = 10.0;
+pub const JET_GREENNESS: f32 = 24.0;
+pub const JET_BRIGHTNESS: f32 = 10.0;
 
-fn toggle_jet(mut jet: CTmpMut<Skeleton, Slot>, on: bool) {
+pub fn toggle_cargo_jet(mut jet: CTmpMut<Skeleton, Slot>, on: bool) {
     if on {
         jet.color_mut().a = JET_BRIGHTNESS;
         jet.color_mut().g = JET_GREENNESS;
@@ -192,10 +192,10 @@ pub fn cargo_ship_jet_animation_system(mut players: Query<(&CargoShip, &mut Spin
     for (cargo_ship, mut spine) in players.iter_mut() {
         let Spine(SkeletonController { skeleton, .. }) = &mut *spine;
         if let Some(left_jet) = skeleton.find_slot_mut("left_jet") {
-            toggle_jet(left_jet, cargo_ship.aggressed);
+            toggle_cargo_jet(left_jet, cargo_ship.aggressed);
         }
         if let Some(right_jet) = skeleton.find_slot_mut("right_jet") {
-            toggle_jet(right_jet, cargo_ship.aggressed);
+            toggle_cargo_jet(right_jet, cargo_ship.aggressed);
         }
     }
 }
